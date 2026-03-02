@@ -191,6 +191,91 @@ This is the most complex milestone and will be broken into sub-stages:
 
 ---
 
+## Known Limitations
+
+This section documents confirmed platform/ecosystem constraints that affect design decisions.
+Understanding these upfront prevents re-discovering them mid-implementation.
+
+### VS Code `MarkdownString` content length cap (~100,000 chars)
+**Status:** Confirmed
+**Impact:** High
+**Affects:** Milestone 1+ (all hover-based rendering)
+
+VS Code truncates `MarkdownString` content at approximately 100,000 characters. A base64-encoded
+PNG easily exceeds this for anything beyond a simple element — a full-page screenshot or a
+component with rich CSS can produce a multi-MB PNG whose base64 representation is several times
+that limit. When truncated, the raw base64 string renders as text in the tooltip instead of an
+image.
+
+**Workarounds to evaluate (in order of preference):**
+1. **Resize/compress the screenshot** — render at a lower resolution or cap viewport dimensions;
+   convert PNG → JPEG at reduced quality before encoding (JPEG is ~5–10× smaller for photos/UIs)
+2. **Crop to element bounds** — Playwright's `locator.screenshot()` already crops to the element,
+   but constraining the element's rendered size (via viewport width) reduces output size further
+3. **Fallback to a webview panel** — if the base64 string would exceed the limit, open a proper
+   `vscode.WebviewPanel` instead of a hover tooltip; webviews can load `vscode-resource:` URIs
+   and have no content-length cap
+4. **Re-evaluate the HTTP image server** — if VS Code ever relaxes hover tooltip CSP for
+   `http://127.0.0.1`, the server in `imageServer.ts` is ready to use and bypasses the size limit
+
+**Recommended near-term fix:** cap screenshot width at ~800px and encode as JPEG at 85% quality
+before base64-encoding. This keeps most previews well under the limit without visible quality loss.
+
+---
+
+### VS Code hover tooltip CSP blocks `http://` image URLs
+**Status:** Confirmed
+**Impact:** High (already worked around)
+**Affects:** Image serving strategy
+
+Even with `MarkdownString.isTrusted = true` and `supportHtml = true`, VS Code's hover tooltip
+webview enforces a CSP that blocks all `http://` requests including `http://127.0.0.1`. The `<img>`
+tag renders but the browser never fetches the URL — only a broken image icon appears.
+
+**Current workaround:** base64 data URIs embedded directly in the `MarkdownString`.
+**Long-term alternative:** webview panel (no CSP restriction, no size limit).
+
+---
+
+### Playwright is a heavy dependency for a VS Code extension
+**Status:** Known architectural constraint
+**Impact:** Medium
+**Affects:** Installation size, activation time, memory usage
+
+Playwright bundles a full Chromium binary (~150–300 MB depending on platform). This is unusually
+large for a VS Code extension. The browser process also consumes significant RAM when running.
+
+**Mitigations in place:**
+- Singleton browser — launched once on first hover, reused across all subsequent renders
+- Lazy init — browser does not start at extension activation, only on first hover
+- `page.close()` after every render — pages are not pooled
+
+**Future mitigations to consider:**
+- Idle timeout — close the browser after N minutes of inactivity, re-launch on next hover
+- Cloud rendering (Pro tier) — offload Playwright entirely from the user's machine
+
+---
+
+### `onLanguage:html` activation — extension inactive until an HTML file is opened
+**Status:** Known, intentional
+**Impact:** Low
+**Affects:** Developer experience during testing
+
+The extension only activates when a `.html` file is opened, which is correct for production but
+means console output and errors are invisible until that trigger fires. During development,
+temporarily set `"activationEvents": ["*"]` in `package.json` to activate on startup.
+
+---
+
+### Dev container: Extension Development Host must target the container
+**Status:** Confirmed, documented
+**Impact:** High during development only
+**Affects:** Local dev setup
+
+See `DEVCONTAINER-DEBUGGING.md` for the full set of dev container constraints and fixes.
+
+---
+
 ## What Success Looks Like
 
 A developer opens any file in any major frontend project — React, Vue, Svelte, Next.js, plain

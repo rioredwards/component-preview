@@ -39,7 +39,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const outputPath = path.join(this.previewDir, `${annotated.hoverId}.png`);
+    const outputPath = path.join(this.previewDir, `${annotated.hoverId}.jpeg`);
     try {
       await renderElement({
         html: annotated.html,
@@ -56,7 +56,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     }
 
     const base64 = fs.readFileSync(outputPath).toString('base64');
-    const md = new vscode.MarkdownString(`<img src="data:image/png;base64,${base64}">`);
+    const md = new vscode.MarkdownString(`<img src="data:image/jpeg;base64,${base64}">`);
 
     md.supportHtml = true;
     md.isTrusted = true;

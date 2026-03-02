@@ -17,10 +17,17 @@ async function getContext(): Promise<BrowserContext> {
     browserInstance = await chromium.launch({ headless: true });
   }
   if (!browserContext) {
-    browserContext = await browserInstance.newContext();
+    browserContext = await browserInstance.newContext({
+      viewport: { width: 800, height: 600 },
+    });
   }
   return browserContext;
 }
+
+// ~90k base64 chars is the practical VS Code MarkdownString truncation limit.
+// 90_000 * 0.75 = 67_500 bytes (base64 expands bytes by 4/3).
+const MAX_BYTES = 67_500;
+const QUALITY_STEPS = [85, 70, 55, 40];
 
 export async function renderElement(opts: RenderOptions): Promise<void> {
   const { html, hoverId, outputPath } = opts;
@@ -34,7 +41,13 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
     await page.goto(`file://${tmpFile}`, { waitUntil: 'networkidle' });
     const locator = page.locator(`[data-hover-id="${hoverId}"]`);
     await locator.waitFor({ state: 'visible', timeout: 5000 });
-    await locator.screenshot({ path: outputPath, animations: 'disabled' });
+
+    let buf: Buffer = Buffer.alloc(0);
+    for (const quality of QUALITY_STEPS) {
+      buf = await locator.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
+      if (buf.length <= MAX_BYTES) { break; }
+    }
+    await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
     await fs.unlink(tmpFile).catch(() => undefined);

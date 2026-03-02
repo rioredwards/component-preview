@@ -9,9 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onLanguage:html"
-  ],
+  "activationEvents": ["onLanguage:html"],
   "main": "./dist/extension.js",
   "contributes": {},
   "scripts": {

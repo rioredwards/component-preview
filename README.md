@@ -2,6 +2,18 @@
 
 This is the README for your extension "component-preview". After writing up a brief description, we recommend including the following sections.
 
+## Dev Container
+
+This project includes a dev container. Open it in VS Code with `Cmd+Shift+P` -> `Dev Containers: Reopen in Container`.
+
+To attach from an external terminal:
+
+```sh
+docker exec -it -u node component-preview bash
+```
+
+Claude Code is pre-installed and runs with `--dangerously-skip-permissions` by default inside the container.
+
 ## Features
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.

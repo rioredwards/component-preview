@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:playwright.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:vshaxe.github.io)",
+      "Bash(pnpm add:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)"
+    ]
+  }
+}

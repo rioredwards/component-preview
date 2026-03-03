@@ -2,13 +2,7 @@ import * as fs from "fs/promises";
 import { Page } from "playwright";
 import { log } from "./logger";
 import { getContext } from "./renderer";
-
-import {
-  MAX_BYTES,
-  MAX_CAPTURE_HEIGHT,
-  MAX_CAPTURE_WIDTH,
-  QUALITY_STEPS,
-} from "./screenshotConstants";
+import { captureAdaptiveJpeg } from "./screenshotPipeline";
 
 export interface DevServerRenderOptions {
   devServerUrl: string;
@@ -285,37 +279,9 @@ export async function renderFromDevServer(opts: DevServerRenderOptions): Promise
     );
   }
 
-  let buf: Buffer = Buffer.alloc(0);
-  for (const quality of QUALITY_STEPS) {
-    buf = await elementHandle.screenshot({ type: "jpeg", quality, animations: "disabled" });
-    log(`renderFromDevServer: screenshot quality=${quality} size=${buf.length}`);
-    if (buf.length <= MAX_BYTES) {
-      break;
-    }
-  }
-
-  // If still too large after quality steps (e.g. a tall <main> or <section>),
-  // scale down by re-rendering the image in a constrained <img> element.
-  if (buf.length > MAX_BYTES) {
-    log("renderFromDevServer: resizing oversized screenshot");
-    const ctx = await getContext();
-    const resizePage = await ctx.newPage();
-    try {
-      const b64 = buf.toString("base64");
-      await resizePage.setContent(
-        `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
-          `<img src="data:image/jpeg;base64,${b64}" ` +
-          `style="max-width:${MAX_CAPTURE_WIDTH}px;max-height:${MAX_CAPTURE_HEIGHT}px;display:block;object-fit:contain">` +
-          `</body></html>`,
-      );
-      const img = resizePage.locator("img");
-      await img.waitFor({ state: "visible", timeout: 5000 });
-      buf = await img.screenshot({ type: "jpeg", quality: QUALITY_STEPS[0], animations: "disabled" });
-      log(`renderFromDevServer: resized size=${buf.length}`);
-    } finally {
-      await resizePage.close();
-    }
-  }
+  const ctx = await getContext();
+  const buf = await captureAdaptiveJpeg(elementHandle, ctx);
+  log(`renderFromDevServer: screenshot size=${buf.length}`);
 
   await fs.writeFile(opts.outputPath, buf);
 }

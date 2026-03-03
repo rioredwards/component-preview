@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
 import { Browser, BrowserContext, chromium } from "playwright";
+import { captureAdaptiveJpeg } from "./screenshotPipeline";
 
 export interface RenderOptions {
   html: string;
@@ -25,13 +26,6 @@ export async function getContext(): Promise<BrowserContext> {
   return browserContext;
 }
 
-import {
-  MAX_BYTES,
-  MAX_CAPTURE_HEIGHT,
-  MAX_CAPTURE_WIDTH,
-  QUALITY_STEPS,
-} from "./screenshotConstants";
-
 export async function renderElement(opts: RenderOptions): Promise<void> {
   const { html, hoverId, outputPath } = opts;
 
@@ -45,19 +39,7 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
     const locator = page.locator(`[data-hover-id="${hoverId}"]`);
     await locator.waitFor({ state: "visible", timeout: 5000 });
 
-    let buf: Buffer = Buffer.alloc(0);
-    for (const quality of QUALITY_STEPS) {
-      buf = await locator.screenshot({ type: "jpeg", quality, animations: "disabled" });
-      if (buf.length <= MAX_BYTES) {
-        break;
-      }
-    }
-
-    // If still too large, scale down via a constrained <img> re-render.
-    if (buf.length > MAX_BYTES) {
-      buf = await resizeBuffer(buf, ctx);
-    }
-
+    const buf = await captureAdaptiveJpeg(locator, ctx);
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
@@ -67,9 +49,8 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
 
 /**
  * Compresses an arbitrary image file to a JPEG that is guaranteed to fit
- * within the VS Code MarkdownString base64 limit. Uses the same adaptive
- * quality loop as renderElement — renders the image in a headless page,
- * steps down quality until the output is small enough.
+ * within the VS Code MarkdownString base64 limit. Renders the image in a
+ * headless page and uses the adaptive quality pipeline.
  */
 export async function compressImageFile(inputPath: string, outputPath: string): Promise<void> {
   const html =
@@ -87,44 +68,11 @@ export async function compressImageFile(inputPath: string, outputPath: string): 
     const locator = page.locator("img");
     await locator.waitFor({ state: "visible", timeout: 5000 });
 
-    let buf: Buffer = Buffer.alloc(0);
-    for (const quality of QUALITY_STEPS) {
-      buf = await locator.screenshot({ type: "jpeg", quality, animations: "disabled" });
-      if (buf.length <= MAX_BYTES) {
-        break;
-      }
-    }
-
-    if (buf.length > MAX_BYTES) {
-      buf = await resizeBuffer(buf, ctx);
-    }
-
+    const buf = await captureAdaptiveJpeg(locator, ctx);
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
     await fs.unlink(tmpFile).catch(() => undefined);
-  }
-}
-
-/**
- * Scales down an oversized JPEG by rendering it in a constrained <img> and
- * re-screenshotting. Returns a buffer guaranteed to be ≤ MAX_BYTES.
- */
-async function resizeBuffer(buf: Buffer, ctx: BrowserContext): Promise<Buffer> {
-  const resizePage = await ctx.newPage();
-  try {
-    const b64 = buf.toString("base64");
-    await resizePage.setContent(
-      `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
-        `<img src="data:image/jpeg;base64,${b64}" ` +
-        `style="max-width:${MAX_CAPTURE_WIDTH}px;max-height:${MAX_CAPTURE_HEIGHT}px;display:block;object-fit:contain">` +
-        `</body></html>`,
-    );
-    const img = resizePage.locator("img");
-    await img.waitFor({ state: "visible", timeout: 5000 });
-    return await img.screenshot({ type: "jpeg", quality: QUALITY_STEPS[0], animations: "disabled" });
-  } finally {
-    await resizePage.close();
   }
 }
 

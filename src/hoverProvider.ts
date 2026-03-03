@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import * as path from "path";
 import * as vscode from "vscode";
 import { inlineStyles } from "./cssInliner";
@@ -50,7 +50,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const attachedPath = this.imageStore.get(cacheKey);
     if (attachedPath) {
-      return this.buildHover(attachedPath, elementId, document.uri.toString());
+      return await this.buildHover(attachedPath, elementId, document.uri.toString());
     }
 
     const cached = this.cache.get(cacheKey);
@@ -85,7 +85,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = this.buildHover(outputPath, elementId, document.uri.toString());
+    const hover = await this.buildHover(outputPath, elementId, document.uri.toString());
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
@@ -107,7 +107,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const attachedPath = this.imageStore.get(cacheKey);
     if (attachedPath) {
-      return this.buildHover(attachedPath, annotated.elementId, document.uri.toString());
+      return await this.buildHover(attachedPath, annotated.elementId, document.uri.toString());
     }
 
     const cached = this.cache.get(cacheKey);
@@ -134,16 +134,16 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = this.buildHover(outputPath, annotated.elementId, document.uri.toString());
+    const hover = await this.buildHover(outputPath, annotated.elementId, document.uri.toString());
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
   }
 
-  private buildHover(imagePath: string, elementId: string, documentUri: string): vscode.Hover {
+  private async buildHover(imagePath: string, elementId: string, documentUri: string): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
-    const base64 = fs.readFileSync(imagePath).toString("base64");
+    const base64 = (await fs.readFile(imagePath)).toString("base64");
 
     const args = encodeURIComponent(JSON.stringify([elementId, documentUri]));
     const attachLink = `[📷 Attach image](command:component-preview.attachImage?${args})`;

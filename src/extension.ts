@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     fs.promises.mkdir(attachedDir, { recursive: true }),
   ]);
 
-  const imageStore = createImageStore(storageRoot);
+  const imageStore = await createImageStore(storageRoot);
   const provider = new HtmlHoverProvider(previewDir, imageStore);
 
   const hoverDisposable = vscode.languages.registerHoverProvider(
@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       );
 
       const cacheKey = `${documentUri}\x00${elementId}`;
-      imageStore.set(cacheKey, dest);
+      await imageStore.set(cacheKey, dest);
 
       vscode.window.showInformationMessage("Preview image attached! Hover again to see it.");
     },

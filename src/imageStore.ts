@@ -1,18 +1,19 @@
 import * as fs from "fs";
+import * as fsp from "fs/promises";
 import * as path from "path";
 
 /** Maps cache keys (uri\x00elementId) to absolute paths of attached images. */
 export interface ImageStore {
   get(key: string): string | undefined;
-  set(key: string, imagePath: string): void;
+  set(key: string, imagePath: string): Promise<void>;
 }
 
-export function createImageStore(storageDir: string): ImageStore {
+export async function createImageStore(storageDir: string): Promise<ImageStore> {
   const storeFile = path.join(storageDir, "image-store.json");
   let data: Record<string, string> = {};
 
   try {
-    data = JSON.parse(fs.readFileSync(storeFile, "utf8")) as Record<string, string>;
+    data = JSON.parse(await fsp.readFile(storeFile, "utf8")) as Record<string, string>;
   } catch {
     // File doesn't exist yet — start fresh
   }
@@ -26,9 +27,9 @@ export function createImageStore(storageDir: string): ImageStore {
       }
       return undefined;
     },
-    set(key, imagePath) {
+    async set(key, imagePath) {
       data[key] = imagePath;
-      fs.writeFileSync(storeFile, JSON.stringify(data, null, 2), "utf8");
+      await fsp.writeFile(storeFile, JSON.stringify(data, null, 2), "utf8");
     },
   };
 }

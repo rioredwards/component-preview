@@ -4,6 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Before starting any non-trivial work, read [`VISION.md`](./VISION.md)** — it is the authoritative source for product direction, engineering values, roadmap milestones, and development workflow.
 
+## Documentation Layout
+
+| Location | What goes there |
+|---|---|
+| Root | `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `VISION.md` — files tools or conventions expect at the top level |
+| `docs/` | Everything else: research notes, architecture decisions, debugging guides, milestone plans |
+
+Current docs: `docs/element-identity.md`, `docs/devcontainer-debugging.md`, `docs/plan-milestone-1.md`
+
 ## What This Extension Does
 
 A VS Code extension that renders HTML elements via Playwright (headless Chromium) and displays a screenshot in the hover tooltip when hovering over an HTML element in a `.html` file.

@@ -272,7 +272,7 @@ temporarily set `"activationEvents": ["*"]` in `package.json` to activate on sta
 **Impact:** High during development only
 **Affects:** Local dev setup
 
-See `DEVCONTAINER-DEBUGGING.md` for the full set of dev container constraints and fixes.
+See `docs/devcontainer-debugging.md` for the full set of dev container constraints and fixes.
 
 ---
 

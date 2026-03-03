@@ -45,21 +45,23 @@ increment — don't start the next until the current is solid.
 - 50-entry / 5-min TTL cache keyed on `uri|version|offset`
 - JPEG embedded as base64 data URI (bypasses VS Code CSP)
 
-### Milestone 2 — External Stylesheets (static HTML path)
+### Milestone 2 — External Stylesheets (static HTML path) (✅ Done)
 - Detect `<link rel="stylesheet">` tags in the document
 - Resolve relative paths to absolute file paths
 - Inline stylesheets as `<style>` blocks before writing the temp file
 - Handle one level of `@import` chains
 - See `docs/plan-milestone-2.md`
 
-### Milestone 3 — React + Dev Server
-The pivot away from reimplementing the build system. See `docs/architecture-rendering-strategy.md`.
-- Detect a running dev server (scan common ports, read `.env` / `vite.config` / `next.config`)
-- Navigate Playwright to the dev server root
-- Inject a script that traverses `__REACT_DEVTOOLS_GLOBAL_HOOK__` fiber tree
-- Find the fiber whose `_debugSource` matches the hovered file + line + column
-- Screenshot that DOM node via Playwright's element handle
-- Cache key: `uri\x00elementId` (same shape as static HTML path)
+### Milestone 3 — React + Dev Server (✅ Done)
+The pivot away from reimplementing the build system. See `docs/architecture-rendering-strategy.md`
+and `docs/react-fiber-internals.md`.
+- Detect a running dev server (scan common ports, read `.env` / `vite.config`)
+- Navigate Playwright to the dev server root (persistent page, reused across hovers)
+- Walk the fiber tree directly via `__reactContainer$` on the root DOM element
+- Recover Babel-computed source line numbers by route-intercepting `react_jsx-dev-runtime.js`
+  and wrapping `jsxDEV` to inject `data-src-line` props — React 19 dropped `_debugSource`
+- Score all matching fibers by proximity to hovered line; screenshot best-match DOM node
+- Cache key: `uri\x00line:col`
 
 ### Milestone 4 — Vue + Other Frameworks
 - Same dev server approach as M3

@@ -53,34 +53,34 @@ No temp files. No inlining. No compilation. The dev server has already done all 
 
 ## React Fiber Scan (M3 implementation detail)
 
-React in development mode (Vite, CRA, Next.js dev) injects source location metadata onto every
-component via `babel-plugin-react-jsx-source`. Each React fiber node carries:
+React's `createRoot()` sets `__reactContainer$<key>` on the root DOM element. This property
+always points to the **stale initial HostRoot fiber**; the live committed tree is reached via
+`stale.stateNode.current`. We access the fiber tree directly — no DevTools bridge needed.
 
-```js
-fiber._debugSource = {
-  fileName: '/absolute/path/to/Button.tsx',
-  lineNumber: 42,
-  columnNumber: 5
-}
-```
+**Getting source line numbers (the hard part):**
 
-The React DevTools bridge exposes the fiber tree via:
+The original plan assumed fibers carry `_debugSource = { fileName, lineNumber }` (React 18,
+via `babel-plugin-react-jsx-source`). React 19 dropped this. It stores `_debugStack = new
+Error()` instead, but that Error's `.stack` contains *compiled* line numbers from Vite's Babel
+transform, not original source lines — making it useless for matching without source map
+resolution.
 
-```js
-window.__REACT_DEVTOOLS_GLOBAL_HOOK__
-```
+Fix: intercept `react_jsx-dev-runtime.js` via `page.route()` before page load, and wrap
+`jsxDEV` to add `data-src-line={lineNumber}` to host element props. Babel always passes the
+correct source location as the 5th argument to `jsxDEV`; React 19 ignores it, but our wrapper
+captures it. The attribute flows into `fiber.memoizedProps["data-src-line"]`.
 
-We inject a Playwright `page.evaluate()` script that:
+See `docs/react-fiber-internals.md` for the full technical breakdown.
 
-1. Walks all fiber roots from `__REACT_DEVTOOLS_GLOBAL_HOOK__.getFiberRoots()`
-2. Does a depth-first traversal of each fiber tree
-3. Finds the fiber whose `_debugSource.fileName + lineNumber + columnNumber` matches the
-   hovered position
-4. Walks `fiber.stateNode` (or `fiber.child` for function components) to get the real DOM node
-5. Returns a selector or coordinates that Playwright can use to screenshot it
+**Element selection:**
 
-Playwright then screenshots that element handle directly — same adaptive JPEG quality pipeline
-as M1.
+Rather than requiring an exact line match (which fails for attribute lines, closing tags, blank
+lines), we collect all fibers referencing the file and score by proximity:
+- Exact match → score 0
+- Lines before cursor → small penalty (element may still be "open")
+- Lines after cursor → 3× penalty (element not yet opened)
+
+The highest-scoring candidate's DOM element is screenshotted via Playwright element handle.
 
 ### Dev Server Detection
 

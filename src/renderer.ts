@@ -25,12 +25,12 @@ export async function getContext(): Promise<BrowserContext> {
   return browserContext;
 }
 
-// ~90k base64 chars is the practical VS Code MarkdownString truncation limit.
-// 90_000 * 0.75 = 67_500 bytes (base64 expands bytes by 4/3).
-const MAX_BYTES = 67_500;
-const QUALITY_STEPS = [85, 70, 55, 40];
-const MAX_CAPTURE_WIDTH = 800;
-const MAX_CAPTURE_HEIGHT = 600;
+import {
+  MAX_BYTES,
+  MAX_CAPTURE_HEIGHT,
+  MAX_CAPTURE_WIDTH,
+  QUALITY_STEPS,
+} from "./screenshotConstants";
 
 export async function renderElement(opts: RenderOptions): Promise<void> {
   const { html, hoverId, outputPath } = opts;

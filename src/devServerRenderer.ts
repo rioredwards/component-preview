@@ -3,12 +3,12 @@ import { Page } from "playwright";
 import { log } from "./logger";
 import { getContext } from "./renderer";
 
-const MAX_BYTES = 67_500;
-const QUALITY_STEPS = [85, 70, 55, 40];
-// Cap screenshot dimensions to prevent base64 strings that exceed VS Code's
-// ~90k MarkdownString limit. Matches the viewport set in getContext().
-const MAX_CAPTURE_WIDTH = 800;
-const MAX_CAPTURE_HEIGHT = 600;
+import {
+  MAX_BYTES,
+  MAX_CAPTURE_HEIGHT,
+  MAX_CAPTURE_WIDTH,
+  QUALITY_STEPS,
+} from "./screenshotConstants";
 
 export interface DevServerRenderOptions {
   devServerUrl: string;

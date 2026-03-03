@@ -7,6 +7,7 @@ import { detectDevServer } from "./devServerDetector";
 import { renderFromDevServer } from "./devServerRenderer";
 import { annotateHtml } from "./htmlAnnotator";
 import { ImageStore } from "./imageStore";
+import { error as logError, info } from "./logger";
 import { renderElement } from "./renderer";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -64,7 +65,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const devServerUrl = await detectDevServer();
     if (!devServerUrl) {
-      console.log("[component-preview] No dev server detected on common ports");
+      info("No dev server detected on common ports");
       return null;
     }
 
@@ -77,7 +78,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
         outputPath,
       });
     } catch (err) {
-      console.error("[component-preview] dev server render failed:", err);
+      logError("dev server render failed:", err);
       return null;
     }
 
@@ -126,7 +127,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     try {
       await renderElement({ html: resolvedHtml, hoverId: annotated.hoverId, outputPath });
     } catch (err) {
-      console.error("[component-preview] render failed:", err);
+      logError("render failed:", err);
       return null;
     }
 

@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { warn } from "./logger";
 
 /**
  * Replaces all local <link rel="stylesheet"> tags with inlined <style> blocks.
@@ -35,7 +36,7 @@ export async function inlineStyles(html: string, docDir: string): Promise<string
       css = await resolveImports(css, path.dirname(absPath));
       replacements.push({ original: fullTag, replacement: `<style>\n${css}\n</style>` });
     } catch (err) {
-      console.warn(`[component-preview] Could not inline stylesheet ${absPath}:`, err);
+      warn(`Could not inline stylesheet ${absPath}:`, err);
     }
   }
 
@@ -68,7 +69,7 @@ async function resolveImports(css: string, cssDir: string): Promise<string> {
       const importedCss = await fs.readFile(absPath, "utf8");
       replacements.push({ original: fullImport, replacement: importedCss });
     } catch (err) {
-      console.warn(`[component-preview] Could not resolve @import ${absPath}:`, err);
+      warn(`Could not resolve @import ${absPath}:`, err);
     }
   }
 

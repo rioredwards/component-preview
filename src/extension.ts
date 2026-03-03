@@ -5,9 +5,11 @@ import * as vscode from "vscode";
 import { disposeDevPage } from "./devServerRenderer";
 import { HtmlHoverProvider } from "./hoverProvider";
 import { createImageStore } from "./imageStore";
+import { error as logError, initLogger } from "./logger";
 import { compressImageFile, disposeRenderer } from "./renderer";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  initLogger();
   const storageRoot = context.globalStorageUri.fsPath;
   const previewDir = path.join(storageRoot, "previews");
   const attachedDir = path.join(storageRoot, "attached");
@@ -59,9 +61,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(hoverDisposable, attachCommand, {
     dispose: () => {
       disposeDevPage();
-      disposeRenderer().catch(console.error);
+      disposeRenderer().catch(logError);
       // Only clean up ephemeral previews — attached images are permanent user data
-      fs.promises.rm(previewDir, { recursive: true, force: true }).catch(console.error);
+      fs.promises.rm(previewDir, { recursive: true, force: true }).catch(logError);
     },
   });
 }

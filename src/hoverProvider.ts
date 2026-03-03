@@ -23,16 +23,20 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     token: vscode.CancellationToken
   ): Promise<vscode.Hover | null> {
     const offset = document.offsetAt(position);
-    const cacheKey = `${document.uri}|${document.version}|${offset}`;
+
+    // Parse first — elementId is only available after this
+    const annotated = annotateHtml(document.getText(), offset);
+    if (!annotated) {
+      return null;
+    }
+
+    // Stable key: uri + structural identity. No version or offset.
+    // \x00 separator cannot appear in HTML attribute values, preventing collisions.
+    const cacheKey = `${document.uri}\x00${annotated.elementId}`;
 
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return cached.hover;
-    }
-
-    const annotated = annotateHtml(document.getText(), offset);
-    if (!annotated) {
-      return null;
     }
 
     if (token.isCancellationRequested) {
@@ -57,7 +61,6 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const base64 = fs.readFileSync(outputPath).toString('base64');
     const md = new vscode.MarkdownString(`<img src="data:image/jpeg;base64,${base64}">`);
-
     md.supportHtml = true;
     md.isTrusted = true;
 
@@ -71,7 +74,6 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     if (this.cache.size < CACHE_MAX) {
       return;
     }
-    // Remove oldest entry
     const oldestKey = this.cache.keys().next().value;
     if (oldestKey !== undefined) {
       this.cache.delete(oldestKey);

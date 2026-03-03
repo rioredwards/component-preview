@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { annotateHtml } from './htmlAnnotator';
+import { inlineStyles } from './cssInliner';
 import { renderElement } from './renderer';
 import { ImageStore } from './imageStore';
 
@@ -53,10 +54,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
+    const docDir = path.dirname(document.uri.fsPath);
+    const resolvedHtml = await inlineStyles(annotated.html, docDir);
+
     const outputPath = path.join(this.previewDir, `${annotated.hoverId}.jpeg`);
     try {
       await renderElement({
-        html: annotated.html,
+        html: resolvedHtml,
         hoverId: annotated.hoverId,
         outputPath,
       });

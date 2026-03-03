@@ -18,6 +18,22 @@ This is intended to become a commercial product:
 
 ---
 
+## Rendering Architecture
+
+The extension uses **two different rendering paths** depending on project type. See
+`docs/architecture-rendering-strategy.md` for full rationale and technical detail.
+
+| Project type | Rendering path |
+|---|---|
+| Static `.html` files | Playwright renders a local temp file; stylesheets are inlined |
+| React / Vue / framework apps | Playwright pointed at the user's **running dev server** |
+
+The dev server path avoids rebuilding the user's build system. Developers working on a React/Vue
+app are almost always running a dev server anyway — requiring it is not a meaningful friction.
+The Chrome DevTools Protocol companion extension is a future option, not current scope.
+
+---
+
 ## Feature Roadmap
 
 Milestones are ordered by dependency and complexity. Each should be treated as a shippable
@@ -27,43 +43,41 @@ increment — don't start the next until the current is solid.
 - Hover over any element in a `.html` file
 - Playwright renders it headlessly, screenshot appears in tooltip
 - 50-entry / 5-min TTL cache keyed on `uri|version|offset`
-- PNG embedded as base64 data URI (bypasses VS Code CSP)
+- JPEG embedded as base64 data URI (bypasses VS Code CSP)
 
-### Milestone 2 — External Stylesheets
+### Milestone 2 — External Stylesheets (static HTML path)
 - Detect `<link rel="stylesheet">` tags in the document
 - Resolve relative paths to absolute file paths
-- Inline or proxy referenced stylesheets so Playwright can load them
-- Handle `@import` chains recursively
+- Inline stylesheets as `<style>` blocks before writing the temp file
+- Handle one level of `@import` chains
+- See `docs/plan-milestone-2.md`
 
-### Milestone 3 — CSS Variants (Tailwind, SCSS, PostCSS)
-- Detect which CSS preprocessor/framework the project uses (via `package.json`, config files)
-- For **Tailwind**: run a lightweight JIT pass over the element's class list before rendering
-- For **SCSS/Less**: compile the source stylesheet to CSS before injecting it
-- Avoid running the full build pipeline — compile only what's needed for the hovered element
+### Milestone 3 — React + Dev Server
+The pivot away from reimplementing the build system. See `docs/architecture-rendering-strategy.md`.
+- Detect a running dev server (scan common ports, read `.env` / `vite.config` / `next.config`)
+- Navigate Playwright to the dev server root
+- Inject a script that traverses `__REACT_DEVTOOLS_GLOBAL_HOOK__` fiber tree
+- Find the fiber whose `_debugSource` matches the hovered file + line + column
+- Screenshot that DOM node via Playwright's element handle
+- Cache key: `uri\x00elementId` (same shape as static HTML path)
 
-### Milestone 4 — JavaScript
-- Execute `<script>` tags in the rendered page (Playwright already supports this)
-- Handle module scripts (`type="module"`) with local resolution
-- Detect and skip scripts that require a server or build step
+### Milestone 4 — Vue + Other Frameworks
+- Same dev server approach as M3
+- Vue DevTools exposes a similar component tree via `window.__VUE_DEVTOOLS_GLOBAL_HOOK__`
+- Svelte: investigate equivalent debug hooks
 
-### Milestone 5 — JSX / Component Frameworks
-This is the most complex milestone and will be broken into sub-stages:
-
-- **React (CRA / Vite)** — compile JSX to a self-contained HTML bundle using esbuild;
-  render the component in isolation with minimal boilerplate
-- **Vue** — similar approach using `@vue/compiler-sfc` + esbuild
-- **Svelte** — compile `.svelte` files using the Svelte compiler
-- **Next.js / Nuxt / SvelteKit** — detect framework, extract component, render in isolation
-  (avoid booting the full framework dev server where possible)
-
-> **Guiding constraint:** never require the user to configure or run anything manually.
-> The extension should detect what it needs and do the work automatically.
+### Milestone 5 — CSS Variants (static HTML path only, deferred)
+Only relevant for projects without a dev server (plain `.html` files with Tailwind / SCSS).
+Deprioritized until M3 and M4 are proven.
+- Detect CSS preprocessor/framework via `package.json` / config files
+- **Tailwind**: lightweight JIT pass over the element's class list before rendering
+- **SCSS/Less**: compile source stylesheet to CSS before injecting
 
 ### Milestone 6 — Pro Infrastructure
 - Cloud-based rendering (offload Playwright from the user's machine)
 - Review links (shareable URLs for rendered previews)
 - CI/CD integration (auto-screenshot components in PRs)
-- Browser extension companion (view previews outside VS Code)
+- Companion Chrome extension (richer element identity, live state, two-way navigation)
 
 ---
 

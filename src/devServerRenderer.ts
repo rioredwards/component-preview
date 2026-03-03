@@ -5,6 +5,10 @@ import { getContext } from "./renderer";
 
 const MAX_BYTES = 67_500;
 const QUALITY_STEPS = [85, 70, 55, 40];
+// Cap screenshot dimensions to prevent base64 strings that exceed VS Code's
+// ~90k MarkdownString limit. Matches the viewport set in getContext().
+const MAX_CAPTURE_WIDTH = 800;
+const MAX_CAPTURE_HEIGHT = 600;
 
 export interface DevServerRenderOptions {
   devServerUrl: string;
@@ -206,6 +210,15 @@ export async function renderFromDevServer(opts: DevServerRenderOptions): Promise
       }
 
       candidates.sort((a, b) => scoreFiber(b.line) - scoreFiber(a.line));
+
+      // Skip candidates with negligible bounding boxes (e.g. hidden skip-nav links).
+      // Fall back to the top-scored candidate if every element is tiny.
+      for (const c of candidates) {
+        const r = c.element.getBoundingClientRect();
+        if (r.width > 2 && r.height > 2) {
+          return c.element;
+        }
+      }
       return candidates[0].element;
     },
     { basename, targetLine: opts.line },
@@ -280,5 +293,29 @@ export async function renderFromDevServer(opts: DevServerRenderOptions): Promise
       break;
     }
   }
+
+  // If still too large after quality steps (e.g. a tall <main> or <section>),
+  // scale down by re-rendering the image in a constrained <img> element.
+  if (buf.length > MAX_BYTES) {
+    log("renderFromDevServer: resizing oversized screenshot");
+    const ctx = await getContext();
+    const resizePage = await ctx.newPage();
+    try {
+      const b64 = buf.toString("base64");
+      await resizePage.setContent(
+        `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
+          `<img src="data:image/jpeg;base64,${b64}" ` +
+          `style="max-width:${MAX_CAPTURE_WIDTH}px;max-height:${MAX_CAPTURE_HEIGHT}px;display:block;object-fit:contain">` +
+          `</body></html>`,
+      );
+      const img = resizePage.locator("img");
+      await img.waitFor({ state: "visible", timeout: 5000 });
+      buf = await img.screenshot({ type: "jpeg", quality: QUALITY_STEPS[0], animations: "disabled" });
+      log(`renderFromDevServer: resized size=${buf.length}`);
+    } finally {
+      await resizePage.close();
+    }
+  }
+
   await fs.writeFile(opts.outputPath, buf);
 }

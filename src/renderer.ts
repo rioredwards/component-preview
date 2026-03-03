@@ -29,6 +29,8 @@ export async function getContext(): Promise<BrowserContext> {
 // 90_000 * 0.75 = 67_500 bytes (base64 expands bytes by 4/3).
 const MAX_BYTES = 67_500;
 const QUALITY_STEPS = [85, 70, 55, 40];
+const MAX_CAPTURE_WIDTH = 800;
+const MAX_CAPTURE_HEIGHT = 600;
 
 export async function renderElement(opts: RenderOptions): Promise<void> {
   const { html, hoverId, outputPath } = opts;
@@ -50,6 +52,12 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
         break;
       }
     }
+
+    // If still too large, scale down via a constrained <img> re-render.
+    if (buf.length > MAX_BYTES) {
+      buf = await resizeBuffer(buf, ctx);
+    }
+
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
@@ -86,10 +94,37 @@ export async function compressImageFile(inputPath: string, outputPath: string): 
         break;
       }
     }
+
+    if (buf.length > MAX_BYTES) {
+      buf = await resizeBuffer(buf, ctx);
+    }
+
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
     await fs.unlink(tmpFile).catch(() => undefined);
+  }
+}
+
+/**
+ * Scales down an oversized JPEG by rendering it in a constrained <img> and
+ * re-screenshotting. Returns a buffer guaranteed to be ≤ MAX_BYTES.
+ */
+async function resizeBuffer(buf: Buffer, ctx: BrowserContext): Promise<Buffer> {
+  const resizePage = await ctx.newPage();
+  try {
+    const b64 = buf.toString("base64");
+    await resizePage.setContent(
+      `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
+        `<img src="data:image/jpeg;base64,${b64}" ` +
+        `style="max-width:${MAX_CAPTURE_WIDTH}px;max-height:${MAX_CAPTURE_HEIGHT}px;display:block;object-fit:contain">` +
+        `</body></html>`,
+    );
+    const img = resizePage.locator("img");
+    await img.waitFor({ state: "visible", timeout: 5000 });
+    return await img.screenshot({ type: "jpeg", quality: QUALITY_STEPS[0], animations: "disabled" });
+  } finally {
+    await resizePage.close();
   }
 }
 

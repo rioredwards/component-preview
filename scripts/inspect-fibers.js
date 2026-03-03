@@ -125,7 +125,8 @@ const JSX_DEV_RUNTIME_PATCH = `
       dump.push({ depth, typeName, srcLine, hasDom, domTag });
 
       if (srcLine !== null && hasDom) {
-        candidates.push({ srcLine, domTag, score: scoreFiber(srcLine) });
+        const rect = el.getBoundingClientRect();
+        candidates.push({ srcLine, domTag, score: scoreFiber(srcLine), w: Math.round(rect.width), h: Math.round(rect.height) });
       }
 
       walk(fiber.child, depth + 1);
@@ -135,7 +136,14 @@ const JSX_DEV_RUNTIME_PATCH = `
 
     candidates.sort((a, b) => b.score - a.score);
 
-    return { dump, candidates, winner: candidates[0] ?? null };
+    // Size guard: skip candidates with negligible bounding boxes.
+    let winner = null;
+    for (const c of candidates) {
+      if (c.w > 2 && c.h > 2) { winner = c; break; }
+    }
+    if (!winner) winner = candidates[0] ?? null;
+
+    return { dump, candidates, winner };
   }, { basename, targetLine: TARGET_LINE });
 
   if (result.error) {
@@ -212,6 +220,11 @@ const JSX_DEV_RUNTIME_PATCH = `
     }
     walk(hostRoot);
     candidates.sort((a, b) => scoreFiber(b.line) - scoreFiber(a.line));
+    // Size guard: skip candidates with negligible bounding boxes.
+    for (const c of candidates) {
+      const r = c.element.getBoundingClientRect();
+      if (r.width > 2 && r.height > 2) { return c.element; }
+    }
     return candidates[0]?.element ?? null;
   }, { basename, targetLine: TARGET_LINE });
 
@@ -222,11 +235,39 @@ const JSX_DEV_RUNTIME_PATCH = `
     process.exit(1);
   }
 
-  const buf = await el.screenshot({ type: 'jpeg', quality: 85, animations: 'disabled' });
+  // Same adaptive pipeline as devServerRenderer.ts: step down JPEG quality,
+  // then resize if still too large for VS Code's base64 limit.
+  const MAX_BYTES = 67_500;
+  const QUALITY_STEPS = [85, 70, 55, 40];
+
+  const box = await el.boundingBox();
+  let buf;
+  for (const quality of QUALITY_STEPS) {
+    buf = await el.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
+    console.log(`  quality=${quality} → ${buf.length} bytes${buf.length <= MAX_BYTES ? ' ✓ fits' : ' ✗ too large'}`);
+    if (buf.length <= MAX_BYTES) { break; }
+  }
+
+  // Resize fallback for oversized elements
+  if (buf.length > MAX_BYTES) {
+    console.log('  → resizing oversized screenshot...');
+    const resizePage = await browser.newPage({ viewport: { width: 820, height: 620 } });
+    const b64 = buf.toString('base64');
+    await resizePage.setContent(
+      '<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">' +
+      '<img src="data:image/jpeg;base64,' + b64 + '" style="max-width:800px;max-height:600px;display:block;object-fit:contain">' +
+      '</body></html>'
+    );
+    const img = resizePage.locator('img');
+    await img.waitFor({ state: 'visible', timeout: 5000 });
+    buf = await img.screenshot({ type: 'jpeg', quality: QUALITY_STEPS[0], animations: 'disabled' });
+    await resizePage.close();
+    console.log(`  resized → ${buf.length} bytes ✓`);
+  }
+
   fs.writeFileSync(outPath, buf);
-  const box = await el.evaluate(e => e.getBoundingClientRect());
   console.log(`✓ Screenshot saved: ${outPath}`);
-  console.log(`  size=${buf.length} bytes  box=${JSON.stringify({ w: Math.round(box.width), h: Math.round(box.height) })}`);
+  console.log(`  size=${buf.length} bytes  box=${JSON.stringify({ w: Math.round(box.width), h: Math.round(box.height) })}${buf.length <= MAX_BYTES ? '' : ' WARNING: still over limit'}`);
 
   await browser.close();
 })();

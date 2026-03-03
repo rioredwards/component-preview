@@ -6,7 +6,7 @@ that caused real bugs or required research to understand.
 ---
 
 ## React 19 dropped `_debugSource`
-
+ 
 The M3 plan originally assumed fibers carry `_debugSource = { fileName, lineNumber, columnNumber }`
 (set by `babel-plugin-react-jsx-source`, which Vite/CRA enable in dev mode). This was true in
 React 18. **React 19 removed it entirely.**

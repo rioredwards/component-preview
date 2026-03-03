@@ -1,22 +1,55 @@
 import * as fs from "fs";
 import * as path from "path";
+import { randomUUID } from "crypto";
 import * as vscode from "vscode";
 import { HtmlHoverProvider } from "./hoverProvider";
+import { createImageStore } from "./imageStore";
 import { disposeRenderer } from "./renderer";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  const previewDir = path.join(context.globalStorageUri.fsPath, "previews");
-  await fs.promises.mkdir(previewDir, { recursive: true });
+  const storageRoot = context.globalStorageUri.fsPath;
+  const previewDir = path.join(storageRoot, "previews");
+  const attachedDir = path.join(storageRoot, "attached");
 
-  const provider = new HtmlHoverProvider(previewDir);
+  await Promise.all([
+    fs.promises.mkdir(previewDir, { recursive: true }),
+    fs.promises.mkdir(attachedDir, { recursive: true }),
+  ]);
+
+  const imageStore = createImageStore(storageRoot);
+  const provider = new HtmlHoverProvider(previewDir, imageStore);
+
   const hoverDisposable = vscode.languages.registerHoverProvider(
     { language: "html", scheme: "file" },
     provider,
   );
 
-  context.subscriptions.push(hoverDisposable, {
+  const attachCommand = vscode.commands.registerCommand(
+    "component-preview.attachImage",
+    async (elementId: string, documentUri: string) => {
+      const files = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: { Images: ["png", "jpg", "jpeg", "webp"] },
+        title: "Attach preview image",
+      });
+      if (!files || files.length === 0) { return; }
+
+      const src = files[0].fsPath;
+      const ext = path.extname(src);
+      const dest = path.join(attachedDir, `${randomUUID()}${ext}`);
+      await fs.promises.copyFile(src, dest);
+
+      const cacheKey = `${documentUri}\x00${elementId}`;
+      imageStore.set(cacheKey, dest);
+
+      vscode.window.showInformationMessage("Preview image attached! Hover again to see it.");
+    }
+  );
+
+  context.subscriptions.push(hoverDisposable, attachCommand, {
     dispose: () => {
       disposeRenderer().catch(console.error);
+      // Only clean up ephemeral previews — attached images are permanent user data
       fs.promises.rm(previewDir, { recursive: true, force: true }).catch(console.error);
     },
   });

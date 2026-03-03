@@ -8,7 +8,7 @@ allowed-tools: Bash
 Run the fiber inspector for line $ARGUMENTS and analyse the results:
 
 ```
-!`cd /workspaces/component-preview && node scripts/inspect-fibers.js $ARGUMENTS 2>&1`
+!`cd /workspaces/component-preview && pnpm run inspect-fibers $ARGUMENTS 2>&1`
 ```
 
 Based on the output above:

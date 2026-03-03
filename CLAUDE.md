@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Root | `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `VISION.md` — files tools or conventions expect at the top level |
 | `docs/` | Everything else: research notes, architecture decisions, debugging guides, milestone plans |
 
-Current docs: `docs/element-identity.md`, `docs/devcontainer-debugging.md`, `docs/plan-milestone-1.md`
+Current docs: `docs/element-identity.md`, `docs/devcontainer-debugging.md`, `docs/plan-milestone-1.md`, `docs/plan-element-identity.md`
 
 ## What This Extension Does
 
@@ -32,19 +32,22 @@ Press **F5** in VS Code to launch an Extension Development Host for manual testi
 
 ## Architecture
 
-The extension has five moving pieces, each in its own module:
-
 | File | Role |
 |---|---|
-| `src/extension.ts` | Entry point: creates `previewDir`, starts image server, registers `HtmlHoverProvider`, wires cleanup |
-| `src/hoverProvider.ts` | `vscode.HoverProvider` — caches up to 50 results with 5-min TTL, keyed on `uri\|version\|offset` |
-| `src/htmlAnnotator.ts` | Parses HTML with `node-html-parser`, finds deepest element at cursor offset, splices `data-hover-id` into the tag |
-| `src/renderer.ts` | Playwright singleton browser — lazy-init, screenshots the annotated element, always closes the page in `finally` |
-| `src/imageServer.ts` | `http.createServer` on port 0 (127.0.0.1), serves PNGs from `previewDir`; present but not used in the hover path (see note below) |
+| `src/extension.ts` | Entry point: creates storage dirs, registers `HtmlHoverProvider` and `attachImage` command, wires cleanup |
+| `src/hoverProvider.ts` | `vscode.HoverProvider` — checks `ImageStore` first, then a 50-entry/5-min TTL render cache, keyed on `uri\|elementId` |
+| `src/htmlAnnotator.ts` | Parses HTML with `node-html-parser`, finds deepest element at cursor, computes stable `elementId`, injects `data-hover-id` UUID |
+| `src/renderer.ts` | Playwright singleton browser — lazy-init, adaptive JPEG quality (85→70→55→40) to stay under VS Code's ~90k base64 char limit |
+| `src/imageStore.ts` | Persists manually attached images in `globalStorageUri/image-store.json`; maps `cacheKey → imagePath` |
+| `src/imageServer.ts` | HTTP server on port 0 — not used in the hover path (CSP blocks it); kept for future webview panel use |
 
-**Data flow:** hover event → `annotateHtml` injects UUID → `renderElement` writes PNG to `previewDir` → PNG read back as base64 → `MarkdownString` with `<img src="data:image/png;base64,...">` (requires `supportHtml = true` and `isTrusted = true`).
+**Auto-render data flow:** hover → `annotateHtml` (parse + stable `elementId`) → check `ImageStore` → check render cache → `renderElement` → base64 JPEG → `MarkdownString` with `<img>` + `📷 Attach image` command link.
 
-> **Why base64 and not the image server?** VS Code's hover tooltip webview enforces a CSP that blocks all `http://` requests — including `http://127.0.0.1` — even with `isTrusted = true`. Base64 data URIs sidestep this entirely. `imageServer.ts` is kept for potential future use (e.g. webview panels).
+**Manual attach flow:** user clicks `📷 Attach image` link → `showOpenDialog` → image copied to `globalStorageUri/attached/` → path saved in `image-store.json` → next hover reads store and shows the attached image directly.
+
+**Element identity:** cache key is `uri\x00elementId`. `elementId` priority: `id` attr → `data-testid` → `data-component` → CSS structural path (e.g. `html > body > main > h1:nth-of-type(2)`). Stable across keystrokes; only changes when document structure changes.
+
+> **Why base64?** VS Code's hover tooltip CSP blocks all `http://` requests including `http://127.0.0.1` even with `isTrusted = true`. Base64 data URIs bypass this entirely.
 
 ## Build System
 
@@ -59,4 +62,5 @@ The extension has five moving pieces, each in its own module:
 - After installing playwright, run `npx playwright install chromium` to download the browser
 - `pnpm` may block playwright's postinstall scripts; run `pnpm approve-builds` before `pnpm install` if needed
 - `node-html-parser`'s root node from `parse()` has `tagName = null` — guard against it in `htmlAnnotator.ts`
-- Each hover uses a unique UUID as the PNG filename to avoid collisions from concurrent hovers
+- Each hover uses a unique UUID as the JPEG filename to avoid collisions from concurrent hovers
+- `globalStorageUri/previews/` is ephemeral (wiped on deactivate); `globalStorageUri/attached/` is permanent user data — never delete it

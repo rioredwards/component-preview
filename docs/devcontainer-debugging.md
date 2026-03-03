@@ -56,3 +56,18 @@ md.isTrusted = true;
 ```
 
 This eliminates the need for an HTTP image server entirely. The image bytes are inlined in the HTML string, so no network request is made and CSP is not a factor.
+
+## 5. `showOpenDialog` browses the container filesystem, not the local machine
+
+`vscode.window.showOpenDialog()` opens a native OS file picker in a normal local VS Code install.
+In a dev container, the extension host runs inside the container, so the dialog browses the
+**container's** filesystem instead — which typically has no user images on it, making file
+attachment features awkward to test.
+
+**This is not a code bug** — real users running the extension locally get a proper graphical
+file picker automatically. It is purely a dev environment constraint.
+
+**Workaround for testing:** run the Extension Development Host locally (not inside the container)
+by cloning the repo on your local machine and pressing F5 from a non-remote VS Code window.
+Alternatively, copy a test image into the container first (`docker cp image.png container:/tmp/`)
+and navigate to it in the dialog.

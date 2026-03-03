@@ -26,6 +26,7 @@ pnpm run check-types    # TypeScript type-check only
 pnpm run lint           # ESLint only
 pnpm run package        # production build (minified, no sourcemaps)
 pnpm run test           # run extension tests via vscode-test
+pnpm run test:unit      # run vitest unit tests (pure functions, no VS Code needed)
 ```
 
 Press **F5** in VS Code to launch an Extension Development Host for manual testing.
@@ -37,12 +38,15 @@ Press **F5** in VS Code to launch an Extension Development Host for manual testi
 | `src/extension.ts` | Entry point: creates storage dirs, registers `HtmlHoverProvider` and `attachImage` command, wires cleanup |
 | `src/hoverProvider.ts` | `vscode.HoverProvider` — routes `.html` to static path, `.tsx/.jsx` to React dev server path |
 | `src/htmlAnnotator.ts` | Parses HTML with `node-html-parser`, finds deepest element at cursor, computes stable `elementId`, injects `data-hover-id` UUID |
-| `src/renderer.ts` | Playwright singleton browser — lazy-init, adaptive JPEG quality (85→70→55→40) to stay under VS Code's ~90k base64 char limit |
-| `src/devServerDetector.ts` | Scans common ports (3000, 5173, 8080, …) to find a running Vite/CRA dev server |
-| `src/devServerRenderer.ts` | React path: intercepts `jsxDEV` to inject `data-src-line`, walks fiber tree, scores candidates, screenshots DOM node |
-| `src/logger.ts` | Appends timestamped log lines to `/tmp/component-preview-debug.log` |
+| `src/renderer.ts` | Playwright singleton browser — lazy-init, delegates to `screenshotPipeline` for adaptive JPEG capture |
+| `src/screenshotConstants.ts` | Shared constants: `MAX_BYTES`, `QUALITY_STEPS`, `MAX_CAPTURE_WIDTH/HEIGHT` |
+| `src/screenshotPipeline.ts` | `captureAdaptiveJpeg()` — quality-stepping loop + resize fallback, used by both render paths |
+| `src/devServerDetector.ts` | Scans common ports (3000, 5173, 8080, …) to find a running Vite/CRA dev server; 30s cache TTL with liveness check |
+| `src/devServerRenderer.ts` | React path: walks fiber tree, scores candidates, screenshots DOM node |
+| `src/jsxDevPatch.ts` | `JSX_DEV_RUNTIME_PATCH` — IIFE that wraps `jsxDEV` to inject `data-src-line` prop |
+| `src/fiberScoring.ts` | `scoreFiber()` — canonical scoring function (browser-side keeps inline copy) |
+| `src/logger.ts` | `initLogger()` creates VS Code Output channel; `debug`/`info`/`warn`/`error` levels; file + channel output |
 | `src/imageStore.ts` | Persists manually attached images in `globalStorageUri/image-store.json`; maps `cacheKey → imagePath` |
-| `src/imageServer.ts` | HTTP server on port 0 — not used in the hover path (CSP blocks it); kept for future webview panel use |
 
 **Static HTML data flow:** hover → `annotateHtml` (parse + stable `elementId`) → check `ImageStore` → check render cache → `inlineStyles` → `renderElement` → base64 JPEG → `MarkdownString`.
 

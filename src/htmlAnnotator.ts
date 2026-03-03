@@ -9,7 +9,7 @@ export interface AnnotateResult {
 
 const STABLE_ATTRS = ["id", "data-testid", "data-component"] as const;
 
-function elementIdentityFromNode(element: HTMLElement): string {
+export function elementIdentityFromNode(element: HTMLElement): string {
   // Priority chain: use an existing stable attribute if present
   for (const attr of STABLE_ATTRS) {
     const val = element.getAttribute(attr)?.trim();
@@ -42,7 +42,7 @@ function elementIdentityFromNode(element: HTMLElement): string {
   return segments.join(" > ");
 }
 
-function findDeepestAtOffset(node: Node, offset: number): HTMLElement | null {
+export function findDeepestAtOffset(node: Node, offset: number): HTMLElement | null {
   if (!(node instanceof HTMLElement)) {
     return null;
   }

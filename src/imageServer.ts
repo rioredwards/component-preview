@@ -1,6 +1,6 @@
-import * as http from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as http from "http";
+import * as path from "path";
 
 export interface ImageServer {
   port: number;
@@ -11,8 +11,8 @@ export interface ImageServer {
 export function startImageServer(serveDir: string): Promise<ImageServer> {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      const filename = path.basename(req.url ?? '');
-      if (!filename.endsWith('.png')) {
+      const filename = path.basename(req.url ?? "");
+      if (!filename.endsWith(".png")) {
         res.writeHead(404);
         res.end();
         return;
@@ -25,14 +25,14 @@ export function startImageServer(serveDir: string): Promise<ImageServer> {
           return;
         }
         res.writeHead(200, {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'no-store',
+          "Content-Type": "image/png",
+          "Cache-Control": "no-store",
         });
         res.end(data);
       });
     });
 
-    server.listen(0, '127.0.0.1', () => {
+    server.listen(0, "127.0.0.1", () => {
       const addr = server.address() as { port: number };
       resolve({
         port: addr.port,
@@ -45,6 +45,6 @@ export function startImageServer(serveDir: string): Promise<ImageServer> {
       });
     });
 
-    server.on('error', reject);
+    server.on("error", reject);
   });
 }

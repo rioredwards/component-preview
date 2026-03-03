@@ -1,5 +1,5 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from "fs/promises";
+import * as path from "path";
 
 /**
  * Replaces all local <link rel="stylesheet"> tags with inlined <style> blocks.
@@ -15,17 +15,23 @@ export async function inlineStyles(html: string, docDir: string): Promise<string
     const fullTag = match[0];
     const attrs = match[1];
 
-    if (!/rel=["']stylesheet["']/i.test(attrs)) { continue; }
+    if (!/rel=["']stylesheet["']/i.test(attrs)) {
+      continue;
+    }
 
     const hrefMatch = /href=["']([^"']+)["']/i.exec(attrs);
-    if (!hrefMatch) { continue; }
+    if (!hrefMatch) {
+      continue;
+    }
 
     const href = hrefMatch[1];
-    if (/^https?:\/\/|^\/\//.test(href)) { continue; }
+    if (/^https?:\/\/|^\/\//.test(href)) {
+      continue;
+    }
 
     const absPath = path.resolve(docDir, href);
     try {
-      let css = await fs.readFile(absPath, 'utf8');
+      let css = await fs.readFile(absPath, "utf8");
       css = await resolveImports(css, path.dirname(absPath));
       replacements.push({ original: fullTag, replacement: `<style>\n${css}\n</style>` });
     } catch (err) {
@@ -53,11 +59,13 @@ async function resolveImports(css: string, cssDir: string): Promise<string> {
     const fullImport = match[0];
     const importPath = match[1];
 
-    if (/^https?:\/\/|^\/\//.test(importPath)) { continue; }
+    if (/^https?:\/\/|^\/\//.test(importPath)) {
+      continue;
+    }
 
     const absPath = path.resolve(cssDir, importPath);
     try {
-      const importedCss = await fs.readFile(absPath, 'utf8');
+      const importedCss = await fs.readFile(absPath, "utf8");
       replacements.push({ original: fullImport, replacement: importedCss });
     } catch (err) {
       console.warn(`[component-preview] Could not resolve @import ${absPath}:`, err);

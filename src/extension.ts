@@ -1,10 +1,11 @@
+import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { randomUUID } from "crypto";
 import * as vscode from "vscode";
+import { disposeDevPage } from "./devServerRenderer";
 import { HtmlHoverProvider } from "./hoverProvider";
 import { createImageStore } from "./imageStore";
-import { disposeRenderer, compressImageFile } from "./renderer";
+import { compressImageFile, disposeRenderer } from "./renderer";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const storageRoot = context.globalStorageUri.fsPath;
@@ -20,7 +21,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const provider = new HtmlHoverProvider(previewDir, imageStore);
 
   const hoverDisposable = vscode.languages.registerHoverProvider(
-    { language: "html", scheme: "file" },
+    [
+      { language: "html", scheme: "file" },
+      { language: "typescriptreact", scheme: "file" },
+      { language: "javascriptreact", scheme: "file" },
+    ],
     provider,
   );
 
@@ -32,25 +37,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         filters: { Images: ["png", "jpg", "jpeg", "webp"] },
         title: "Attach preview image",
       });
-      if (!files || files.length === 0) { return; }
+      if (!files || files.length === 0) {
+        return;
+      }
 
       const src = files[0].fsPath;
       const dest = path.join(attachedDir, `${randomUUID()}.jpeg`);
 
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: "Processing image…" },
-        () => compressImageFile(src, dest)
+        () => compressImageFile(src, dest),
       );
 
       const cacheKey = `${documentUri}\x00${elementId}`;
       imageStore.set(cacheKey, dest);
 
       vscode.window.showInformationMessage("Preview image attached! Hover again to see it.");
-    }
+    },
   );
 
   context.subscriptions.push(hoverDisposable, attachCommand, {
     dispose: () => {
+      disposeDevPage();
       disposeRenderer().catch(console.error);
       // Only clean up ephemeral previews — attached images are permanent user data
       fs.promises.rm(previewDir, { recursive: true, force: true }).catch(console.error);

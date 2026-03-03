@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 /** Maps cache keys (uri\x00elementId) to absolute paths of attached images. */
 export interface ImageStore {
@@ -8,11 +8,11 @@ export interface ImageStore {
 }
 
 export function createImageStore(storageDir: string): ImageStore {
-  const storeFile = path.join(storageDir, 'image-store.json');
+  const storeFile = path.join(storageDir, "image-store.json");
   let data: Record<string, string> = {};
 
   try {
-    data = JSON.parse(fs.readFileSync(storeFile, 'utf8')) as Record<string, string>;
+    data = JSON.parse(fs.readFileSync(storeFile, "utf8")) as Record<string, string>;
   } catch {
     // File doesn't exist yet — start fresh
   }
@@ -21,12 +21,14 @@ export function createImageStore(storageDir: string): ImageStore {
     get(key) {
       const p = data[key];
       // Guard against stale entries where the image file was deleted
-      if (p && fs.existsSync(p)) { return p; }
+      if (p && fs.existsSync(p)) {
+        return p;
+      }
       return undefined;
     },
     set(key, imagePath) {
       data[key] = imagePath;
-      fs.writeFileSync(storeFile, JSON.stringify(data, null, 2), 'utf8');
+      fs.writeFileSync(storeFile, JSON.stringify(data, null, 2), "utf8");
     },
   };
 }

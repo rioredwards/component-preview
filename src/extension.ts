@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import * as vscode from "vscode";
 import { HtmlHoverProvider } from "./hoverProvider";
 import { createImageStore } from "./imageStore";
-import { disposeRenderer } from "./renderer";
+import { disposeRenderer, compressImageFile } from "./renderer";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const storageRoot = context.globalStorageUri.fsPath;
@@ -35,9 +35,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!files || files.length === 0) { return; }
 
       const src = files[0].fsPath;
-      const ext = path.extname(src);
-      const dest = path.join(attachedDir, `${randomUUID()}${ext}`);
-      await fs.promises.copyFile(src, dest);
+      const dest = path.join(attachedDir, `${randomUUID()}.jpeg`);
+
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: "Processing image…" },
+        () => compressImageFile(src, dest)
+      );
 
       const cacheKey = `${documentUri}\x00${elementId}`;
       imageStore.set(cacheKey, dest);

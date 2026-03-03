@@ -1,6 +1,7 @@
 import * as os from 'os';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
 import { chromium, Browser, BrowserContext } from 'playwright';
 
 export interface RenderOptions {
@@ -40,6 +41,39 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
   try {
     await page.goto(`file://${tmpFile}`, { waitUntil: 'networkidle' });
     const locator = page.locator(`[data-hover-id="${hoverId}"]`);
+    await locator.waitFor({ state: 'visible', timeout: 5000 });
+
+    let buf: Buffer = Buffer.alloc(0);
+    for (const quality of QUALITY_STEPS) {
+      buf = await locator.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
+      if (buf.length <= MAX_BYTES) { break; }
+    }
+    await fs.writeFile(outputPath, buf);
+  } finally {
+    await page.close();
+    await fs.unlink(tmpFile).catch(() => undefined);
+  }
+}
+
+/**
+ * Compresses an arbitrary image file to a JPEG that is guaranteed to fit
+ * within the VS Code MarkdownString base64 limit. Uses the same adaptive
+ * quality loop as renderElement — renders the image in a headless page,
+ * steps down quality until the output is small enough.
+ */
+export async function compressImageFile(inputPath: string, outputPath: string): Promise<void> {
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:0">` +
+    `<img src="file://${inputPath}" style="max-width:800px;display:block">` +
+    `</body></html>`;
+
+  const tmpFile = path.join(os.tmpdir(), `compress-${randomUUID()}.html`);
+  await fs.writeFile(tmpFile, html, 'utf8');
+
+  const ctx = await getContext();
+  const page = await ctx.newPage();
+  try {
+    await page.goto(`file://${tmpFile}`, { waitUntil: 'networkidle' });
+    const locator = page.locator('img');
     await locator.waitFor({ state: 'visible', timeout: 5000 });
 
     let buf: Buffer = Buffer.alloc(0);

@@ -9,7 +9,7 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "/home/node/react-app"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "/tmp/hover-fixture-debug"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }
   ]

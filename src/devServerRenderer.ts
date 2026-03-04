@@ -3,7 +3,7 @@ import { Page } from "playwright";
 import { JSX_DEV_RUNTIME_PATCH } from "./jsxDevPatch";
 import { log } from "./logger";
 import { getContext } from "./renderer";
-import { captureAdaptiveJpeg } from "./screenshotPipeline";
+import { captureAdaptiveJpeg, settlePageForCapture } from "./screenshotPipeline";
 
 export interface DevServerRenderOptions {
   devServerUrl: string;
@@ -251,7 +251,16 @@ export async function renderFromDevServer(opts: DevServerRenderOptions): Promise
   }
 
   const ctx = await getContext();
-  const buf = await captureAdaptiveJpeg(elementHandle, ctx);
+
+  // Reset scroll to top before screenshotting. The persistent devPage may have
+  // been scrolled by a previous hover: if the site has a position:fixed header,
+  // a non-zero scroll offset causes scrollIntoView() to park the target element
+  // at viewport y=0, placing the header directly on top of the element in the
+  // screenshot.
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  await settlePageForCapture(page);
+  const buf = await captureAdaptiveJpeg(elementHandle, page, ctx);
   log(`renderFromDevServer: screenshot size=${buf.length}`);
 
   await fs.writeFile(opts.outputPath, buf);

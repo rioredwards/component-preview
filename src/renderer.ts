@@ -3,7 +3,8 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
 import { Browser, BrowserContext, chromium } from "playwright";
-import { captureAdaptiveJpeg } from "./screenshotPipeline";
+import { captureAdaptiveJpeg, settlePageForCapture } from "./screenshotPipeline";
+import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "./screenshotConstants";
 
 export interface RenderOptions {
   html: string;
@@ -20,7 +21,7 @@ export async function getContext(): Promise<BrowserContext> {
   }
   if (!browserContext) {
     browserContext = await browserInstance.newContext({
-      viewport: { width: 800, height: 600 },
+      viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
     });
   }
   return browserContext;
@@ -38,8 +39,13 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
     await page.goto(`file://${tmpFile}`, { waitUntil: "networkidle" });
     const locator = page.locator(`[data-hover-id="${hoverId}"]`);
     await locator.waitFor({ state: "visible", timeout: 5000 });
+    const handle = await locator.elementHandle();
+    if (!handle) {
+      throw new Error(`Failed to resolve element handle for hover id ${hoverId}`);
+    }
 
-    const buf = await captureAdaptiveJpeg(locator, ctx);
+    await settlePageForCapture(page);
+    const buf = await captureAdaptiveJpeg(handle, page, ctx);
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();
@@ -67,8 +73,13 @@ export async function compressImageFile(inputPath: string, outputPath: string): 
     await page.goto(`file://${tmpFile}`, { waitUntil: "networkidle" });
     const locator = page.locator("img");
     await locator.waitFor({ state: "visible", timeout: 5000 });
+    const handle = await locator.elementHandle();
+    if (!handle) {
+      throw new Error(`Failed to resolve image handle for ${inputPath}`);
+    }
 
-    const buf = await captureAdaptiveJpeg(locator, ctx);
+    await settlePageForCapture(page);
+    const buf = await captureAdaptiveJpeg(handle, page, ctx);
     await fs.writeFile(outputPath, buf);
   } finally {
     await page.close();

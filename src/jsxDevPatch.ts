@@ -8,7 +8,7 @@
 // Fix: wrap jsxDEV and copy the Babel-computed lineNumber into a `data-src-line`
 // prop on host (string-type) elements. React passes `data-*` attributes through
 // to the DOM without warnings. The prop also lands on fiber.memoizedProps where
-// our evaluate code can read it — giving exact source line numbers.
+// our evaluate code can read it, giving exact source line numbers.
 //
 // The module uses var-scoped `require_jsx_dev_runtime` (esbuild __commonJS
 // pattern), so this IIFE can call it to get the cached exports object and
@@ -21,7 +21,10 @@ export const JSX_DEV_RUNTIME_PATCH = `
   var orig = mod.jsxDEV;
   mod.jsxDEV = function (type, config, key, isStatic, source, self) {
     if (source && typeof type === "string" && source.lineNumber != null) {
-      config = Object.assign({}, config, { "data-src-line": source.lineNumber });
+      config = Object.assign({}, config, {
+        "data-src-line": source.lineNumber,
+        "data-src-file": source.fileName || ""
+      });
     }
     return orig(type, config, key, isStatic, source, self);
   };

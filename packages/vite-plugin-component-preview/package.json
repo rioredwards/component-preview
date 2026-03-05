@@ -1,0 +1,38 @@
+{
+  "name": "vite-plugin-component-preview",
+  "version": "0.1.0",
+  "description": "Inject component preview source metadata into Vite framework output.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.0",
+    "@vue/compiler-dom": "^3.5.18",
+    "@vue/compiler-sfc": "^3.5.18",
+    "magic-string": "^0.30.17",
+    "svelte": "^5.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.4"
+  }
+}

@@ -1,20 +1,47 @@
 import * as fs from "fs/promises";
-import { Page } from "playwright";
-import { JSX_DEV_RUNTIME_PATCH } from "./jsxDevPatch";
-import { log } from "./logger";
+import { ElementHandle, Page } from "playwright";
+import { FindElementRequest, FrameworkAdapter } from "./frameworkAdapter";
+import { info, log } from "./logger";
+import { ReactFiberAdapter } from "./reactFiberAdapter";
 import { getContext } from "./renderer";
 import { captureAdaptiveJpeg, settlePageForCapture } from "./screenshotPipeline";
+import { VitePluginAdapter } from "./vitePluginAdapter";
 
 export interface DevServerRenderOptions {
   devServerUrl: string;
+  workspaceRoot: string;
   filePath: string;
   line: number; // 1-based
+  column: number; // 1-based
   outputPath: string;
 }
 
-// Persistent page — navigated once, reused for all subsequent fiber scans.
+export const ERROR_MISSING_VITE_PLUGIN = "MISSING_VITE_PLUGIN";
+
+export class MissingVitePluginError extends Error {
+  readonly code = ERROR_MISSING_VITE_PLUGIN;
+}
+
+const adapters: FrameworkAdapter[] = [
+  new VitePluginAdapter(),
+  new ReactFiberAdapter(),
+];
+
 let devPage: Page | null = null;
 let devPageUrl: string | null = null;
+const selectedAdapterByOrigin = new Map<string, FrameworkAdapter["name"]>();
+
+function getOriginKey(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
+}
+
+function fileIsPluginOnly(filePath: string): boolean {
+  return /\.(vue|svelte)$/i.test(filePath);
+}
 
 async function getDevPage(devServerUrl: string): Promise<Page> {
   if (devPage && devPageUrl === devServerUrl) {
@@ -24,244 +51,135 @@ async function getDevPage(devServerUrl: string): Promise<Page> {
 
   log("getDevPage: navigating to", devServerUrl);
   const ctx = await getContext();
+
   if (devPage) {
     await devPage.close().catch(() => undefined);
   }
 
   devPage = await ctx.newPage();
-
-  // Intercept the pre-bundled React JSX dev runtime to inject our jsxDEV patch.
-  // Must be registered before goto() so the route is active for the first load.
-  await devPage.route("**/react_jsx-dev-runtime.js*", async (route) => {
-    const response = await route.fetch();
-    const original = await response.text();
-    // Strip content-length — body length will change after appending the patch.
-    const headers = Object.fromEntries(
-      Object.entries(response.headers()).filter(([k]) => k !== "content-length"),
-    );
-    await route.fulfill({ body: original + JSX_DEV_RUNTIME_PATCH, headers });
-  });
+  for (const adapter of adapters) {
+    await adapter.initialize(devPage, devServerUrl);
+  }
 
   await devPage.goto(devServerUrl, { waitUntil: "networkidle" });
   log("getDevPage: page loaded, url =", devPage.url());
 
-  // __reactContainer$<key> is set once at createRoot() time and always points
-  // to the *initial* (stale) HostRoot fiber. After the first render React swaps
-  // FiberRootNode.current to the newly committed tree, so we must follow
-  // stale → stateNode (FiberRootNode) → current (live HostRoot) → child.
-  await devPage.waitForFunction(
-    () => {
-      const root = document.getElementById("root") ?? document.body;
-      const key = Object.keys(root).find((k) => k.startsWith("__reactContainer"));
-      if (!key) {
-        return false;
-      }
-      const stale = (root as any)[key];
-      return !!stale?.stateNode?.current?.child;
-    },
-    { timeout: 10000 },
-  );
-  log("getDevPage: fiber tree is populated");
-
   devPageUrl = devServerUrl;
   return devPage;
+}
+
+async function pickAdapter(
+  page: Page,
+  opts: DevServerRenderOptions,
+): Promise<{ selected: FrameworkAdapter; detected: FrameworkAdapter[] }> {
+  const detected: FrameworkAdapter[] = [];
+  for (const adapter of adapters) {
+    if (await adapter.detect(page)) {
+      detected.push(adapter);
+    }
+  }
+
+  if (detected.length === 0) {
+    if (fileIsPluginOnly(opts.filePath)) {
+      throw new MissingVitePluginError(
+        "vite-plugin-component-preview is required for Vue/Svelte hover previews.",
+      );
+    }
+    throw new Error("No compatible framework adapter detected on the current page.");
+  }
+
+  const origin = getOriginKey(opts.devServerUrl);
+  const preferred = selectedAdapterByOrigin.get(origin);
+  const selected = detected.find((adapter) => adapter.name === preferred) ?? detected[0];
+
+  log(
+    "pickAdapter: detected",
+    detected.map((a) => a.name).join(", "),
+    "selected",
+    selected.name,
+  );
+
+  return { selected, detected };
+}
+
+async function findElementWithFallbacks(
+  page: Page,
+  opts: DevServerRenderOptions,
+  selected: FrameworkAdapter,
+  detected: FrameworkAdapter[],
+): Promise<ElementHandle<Element> | null> {
+  const request: FindElementRequest = {
+    workspaceRoot: opts.workspaceRoot,
+    absoluteFilePath: opts.filePath,
+    line: opts.line,
+    column: opts.column,
+  };
+
+  const first = await selected.findElement(page, request);
+  if (first) {
+    selectedAdapterByOrigin.set(getOriginKey(opts.devServerUrl), selected.name);
+    return first;
+  }
+
+  for (const adapter of detected) {
+    if (adapter.name === selected.name) {
+      continue;
+    }
+    const next = await adapter.findElement(page, request);
+    if (next) {
+      info(
+        "Adapter fallback selected",
+        adapter.name,
+        "after",
+        selected.name,
+        "did not find a matching element.",
+      );
+      selectedAdapterByOrigin.set(getOriginKey(opts.devServerUrl), adapter.name);
+      return next;
+    }
+  }
+
+  return null;
+}
+
+export async function renderFromDevServer(opts: DevServerRenderOptions): Promise<void> {
+  const page = await getDevPage(opts.devServerUrl);
+
+  const { selected, detected } = await pickAdapter(page, opts);
+  const elementHandle = await findElementWithFallbacks(page, opts, selected, detected);
+
+  if (!elementHandle) {
+    throw new Error(
+      `No element found for ${opts.filePath}:${opts.line}:${opts.column} ` +
+        `using adapters [${detected.map((a) => a.name).join(", ")}].`,
+    );
+  }
+
+  const infoPayload = await elementHandle.evaluate((el) => ({
+    tag: el.tagName.toLowerCase(),
+    id: el.id || null,
+    cls: (el.className as string).slice(0, 80) || null,
+    text: el.textContent?.trim().slice(0, 80) || null,
+    box: el.getBoundingClientRect(),
+  }));
+  log("renderFromDevServer: matched", JSON.stringify(infoPayload));
+
+  const ctx = await getContext();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settlePageForCapture(page);
+
+  const buf = await captureAdaptiveJpeg(elementHandle, page, ctx);
+  log(`renderFromDevServer: screenshot size=${buf.length}`);
+  await fs.writeFile(opts.outputPath, buf);
 }
 
 export function disposeDevPage(): void {
   devPage?.close().catch(() => undefined);
   devPage = null;
   devPageUrl = null;
-}
+  selectedAdapterByOrigin.clear();
 
-/**
- * Runs the fiber scan on the persistent dev server page and screenshots
- * the element best matching the hovered source location.
- */
-export async function renderFromDevServer(opts: DevServerRenderOptions): Promise<void> {
-  const page = await getDevPage(opts.devServerUrl);
-  const basename = opts.filePath.split("/").pop()!;
-
-  log("renderFromDevServer: scanning for", basename, "line", opts.line);
-
-  const handle = await page.evaluateHandle(
-    ({ basename, targetLine }: { basename: string; targetLine: number }) => {
-      // Get the live HostRoot fiber. The __reactContainer$ property is set once
-      // at createRoot() and always holds the stale initial fiber; the live
-      // committed tree is at stale.stateNode.current.
-      const rootEl = document.getElementById("root") ?? document.body;
-      const key = Object.keys(rootEl).find((k) => k.startsWith("__reactContainer"));
-      if (!key) {
-        return null;
-      }
-      const stale: any = (rootEl as any)[key];
-      const hostRoot = stale?.stateNode?.current ?? stale;
-
-      // Walk down via .child until we hit a real DOM element.
-      function getDomElement(fiber: any): Element | null {
-        for (let f = fiber; f; f = f.child) {
-          if (f.stateNode instanceof Element) {
-            return f.stateNode;
-          }
-        }
-        return null;
-      }
-
-      // Extract the source line number from a fiber's debug metadata.
-      //
-      // Priority:
-      //  1. data-src-line  — set by our jsxDEV patch, exact Babel source lines
-      //  2. _debugSource   — React 18 (babel-plugin-react-jsx-source)
-      //  3. _debugStack    — React 19 fallback (compiled lines, imprecise)
-      function extractDebugLine(fiber: any): number | null {
-        // 1. Best: our injected data-src-line (exact source lines from Babel)
-        const srcLine =
-          fiber.memoizedProps?.["data-src-line"] ?? fiber.pendingProps?.["data-src-line"];
-        if (srcLine !== null && srcLine !== undefined) {
-          return Number(srcLine);
-        }
-
-        // 2. React 18: _debugSource set by babel-plugin-react-jsx-source
-        const src = fiber._debugSource;
-        if (src?.fileName?.includes(basename)) {
-          return src.lineNumber as number;
-        }
-
-        // 3. React 19 fallback: _debugStack Error — contains compiled line numbers.
-        // After "App.jsx" there may be "?t=123456" (Vite HMR timestamp) before
-        // ":line:col". /:(\d+):/ finds the first :NUMBER: regardless of query params.
-        const stack: string = fiber._debugStack?.stack ?? "";
-        if (!stack.includes(basename)) {
-          return null;
-        }
-        const after = stack.slice(stack.indexOf(basename) + basename.length);
-        const m = after.match(/:(\d+):/);
-        return m ? parseInt(m[1]) : null;
-      }
-
-      // Collect every fiber that references this file and has a visible DOM node.
-      const candidates: Array<{ element: Element; line: number }> = [];
-
-      function collect(fiber: any): void {
-        if (!fiber) {
-          return;
-        }
-        const line = extractDebugLine(fiber);
-        if (line !== null) {
-          const el = getDomElement(fiber);
-          if (el) {
-            candidates.push({ element: el, line });
-          }
-        }
-        collect(fiber.child);
-        collect(fiber.sibling);
-      }
-      collect(hostRoot);
-
-      if (candidates.length === 0) {
-        return null;
-      }
-
-      // Score candidates by proximity to targetLine. Exact match wins; lines
-      // just before the cursor are plausibly "open" containers (small penalty);
-      // lines after haven't opened yet (heavy penalty).
-      function scoreFiber(candidateLine: number): number {
-        if (candidateLine === targetLine) {
-          return 0;
-        }
-        if (candidateLine < targetLine) {
-          return -(targetLine - candidateLine);
-        }
-        return -(candidateLine - targetLine) * 3;
-      }
-
-      candidates.sort((a, b) => scoreFiber(b.line) - scoreFiber(a.line));
-
-      // Skip candidates with negligible bounding boxes (e.g. hidden skip-nav links).
-      // Fall back to the top-scored candidate if every element is tiny.
-      for (const c of candidates) {
-        const r = c.element.getBoundingClientRect();
-        if (r.width > 2 && r.height > 2) {
-          return c.element;
-        }
-      }
-      return candidates[0].element;
-    },
-    { basename, targetLine: opts.line },
-  );
-
-  const elementHandle = handle.asElement();
-  if (elementHandle) {
-    const info = await elementHandle.evaluate((el) => ({
-      tag: el.tagName.toLowerCase(),
-      id: el.id || null,
-      cls: (el.className as string).slice(0, 50) || null,
-      text: el.textContent?.trim().slice(0, 60) || null,
-      box: el.getBoundingClientRect(),
-    }));
-    log("renderFromDevServer: matched", JSON.stringify(info));
+  for (const adapter of adapters) {
+    adapter.dispose?.().catch(() => undefined);
   }
-
-  if (!elementHandle) {
-    // Run a diagnostic pass to log which fibers were found for this file.
-    const found = await page.evaluate(
-      ({ basename }: { basename: string }) => {
-        const rootEl = document.getElementById("root") ?? document.body;
-        const key = Object.keys(rootEl).find((k) => k.startsWith("__reactContainer"));
-        if (!key) {
-          return ["no __reactContainer key found"];
-        }
-        const stale: any = (rootEl as any)[key];
-        const hostRoot = stale?.stateNode?.current ?? stale;
-
-        const out: string[] = [];
-        function walk(f: any): void {
-          if (!f || out.length >= 15) {
-            return;
-          }
-          const srcLine =
-            f.memoizedProps?.["data-src-line"] ?? f.pendingProps?.["data-src-line"];
-          const src = f._debugSource;
-          const stack: string = f._debugStack?.stack ?? "";
-          if (
-            srcLine !== null && srcLine !== undefined ||
-            src?.fileName?.includes(basename) ||
-            stack.includes(basename)
-          ) {
-            const line = srcLine ?? src?.lineNumber ?? (() => {
-              const after = stack.slice(stack.indexOf(basename) + basename.length);
-              const m = after.match(/:(\d+):/);
-              return m ? m[1] : "?";
-            })();
-            const name = typeof f.type === "function" ? f.type.name : String(f.type);
-            out.push(`${name} @ line ${line}`);
-          }
-          walk(f.child);
-          walk(f.sibling);
-        }
-        walk(hostRoot);
-        return out.length ? out : ["no fibers matched this file"];
-      },
-      { basename },
-    );
-    log("renderFromDevServer: no element found. Fibers for", basename, ":", found);
-    throw new Error(
-      `No React element found at ${opts.filePath}:${opts.line}\n` +
-        `  Fibers in this file: ${found.join(", ")}`,
-    );
-  }
-
-  const ctx = await getContext();
-
-  // Reset scroll to top before screenshotting. The persistent devPage may have
-  // been scrolled by a previous hover: if the site has a position:fixed header,
-  // a non-zero scroll offset causes scrollIntoView() to park the target element
-  // at viewport y=0, placing the header directly on top of the element in the
-  // screenshot.
-  await page.evaluate(() => window.scrollTo(0, 0));
-
-  await settlePageForCapture(page);
-  const buf = await captureAdaptiveJpeg(elementHandle, page, ctx);
-  log(`renderFromDevServer: screenshot size=${buf.length}`);
-
-  await fs.writeFile(opts.outputPath, buf);
 }

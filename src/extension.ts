@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { disposeDevPage } from "./devServerRenderer";
-import { HtmlHoverProvider } from "./hoverProvider";
+import { HtmlHoverProvider, PLUGIN_SETUP_COMMAND } from "./hoverProvider";
 import { createImageStore } from "./imageStore";
 import { error as logError, initLogger } from "./logger";
 import { compressImageFile, disposeRenderer } from "./renderer";
@@ -20,13 +20,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   ]);
 
   const imageStore = await createImageStore(storageRoot);
-  const provider = new HtmlHoverProvider(previewDir, imageStore);
+  const provider = new HtmlHoverProvider(previewDir, imageStore, context.globalState);
 
   const hoverDisposable = vscode.languages.registerHoverProvider(
     [
       { language: "html", scheme: "file" },
       { language: "typescriptreact", scheme: "file" },
       { language: "javascriptreact", scheme: "file" },
+      { language: "vue", scheme: "file" },
+      { language: "svelte", scheme: "file" },
     ],
     provider,
   );
@@ -58,11 +60,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   );
 
-  context.subscriptions.push(hoverDisposable, attachCommand, {
+  const pluginSetupCommand = vscode.commands.registerCommand(
+    PLUGIN_SETUP_COMMAND,
+    async () => {
+      await vscode.env.openExternal(
+        vscode.Uri.parse("https://www.npmjs.com/package/vite-plugin-component-preview"),
+      );
+    },
+  );
+
+  context.subscriptions.push(hoverDisposable, attachCommand, pluginSetupCommand, {
     dispose: () => {
       disposeDevPage();
       disposeRenderer().catch(logError);
-      // Only clean up ephemeral previews — attached images are permanent user data
+      // Only clean up ephemeral previews. Attached images are permanent user data.
       fs.promises.rm(previewDir, { recursive: true, force: true }).catch(logError);
     },
   });

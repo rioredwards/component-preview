@@ -1,83 +1,81 @@
-# component-preview README
+# component-preview
 
-This is the README for your extension "component-preview". After writing up a brief description, we recommend including the following sections.
+Show rendered UI previews on hover inside VS Code.
 
-## Dev Container
+The extension uses two rendering paths:
 
-This project includes a dev container. Open it in VS Code with `Cmd+Shift+P` -> `Dev Containers: Reopen in Container`.
+1. Static HTML path for `.html` files.
+2. Dev server path for framework files (`.tsx`, `.jsx`, `.vue`, `.svelte`).
 
-To attach from an external terminal:
+## Support Matrix
+
+| File type | Works without plugin | Works with `vite-plugin-component-preview` |
+| --- | --- | --- |
+| `.html` | Yes | Not needed |
+| `.tsx` / `.jsx` | Yes (React fiber fallback) | Yes (preferred) |
+| `.vue` | No | Yes |
+| `.svelte` | No | Yes |
+
+## Install
+
+### Extension development
 
 ```sh
-docker exec -it -u node component-preview bash
+npm install
+npm run compile
 ```
 
-Claude Code is pre-installed and runs with `--dangerously-skip-permissions` by default inside the container.
+Press `F5` in VS Code to launch the Extension Development Host.
 
-## Features
+### Vite plugin for Vue, Svelte, and preferred React matching
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Install in your Vite app:
 
-For example if there is an image subfolder under your extension project workspace:
+```sh
+npm install -D vite-plugin-component-preview
+```
 
-\!\[feature X\]\(images/feature-x.png\)
+Then add to `vite.config.ts`:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+```ts
+import { defineConfig } from "vite";
+import componentPreview from "vite-plugin-component-preview";
 
-## Requirements
+export default defineConfig({
+  plugins: [componentPreview()],
+});
+```
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Settings
 
-## Extension Settings
+`component-preview.devServerUrl`
+- Optional URL override when auto detection does not find your dev server.
+- Example: `http://localhost:5173`
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## How detection works
 
-For example:
+For framework files, the extension checks in this order:
 
-This extension contributes the following settings:
+1. `component-preview.devServerUrl` setting.
+2. `.env` / `.env.local` (`VITE_PORT` or `PORT`).
+3. `vite.config.*` `server.port`.
+4. Common ports (`3000`, `5173`, `4173`, `8080`, `8000`).
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## Troubleshooting
 
-## Known Issues
+### No preview appears on `.tsx` / `.jsx`
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Confirm the app dev server is running.
+- Hover again after the page finishes loading.
+- Set `component-preview.devServerUrl` if your server is on a non-standard URL.
 
-## Release Notes
+### No preview appears on `.vue` / `.svelte`
 
-Users appreciate release notes as you update your extension.
+- Install and enable `vite-plugin-component-preview`.
+- Restart the app dev server after adding the plugin.
 
-### 1.0.0
+### Wrong element is previewed
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- Save file changes and hover again.
+- Confirm your app route currently renders the hovered component.
+- If two files share the same name, plugin mode is recommended for exact path matching.

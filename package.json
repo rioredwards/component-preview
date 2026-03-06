@@ -48,6 +48,7 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vscode-test",
+    "test:demo:hover": "npm run compile-tests && npm run compile && vscode-test --grep \"shows a no-server diagnostic hover|renders an image hover from a configured local test server\"",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",

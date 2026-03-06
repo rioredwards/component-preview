@@ -95,3 +95,103 @@ Use explicit `.js` specifiers for relative imports in plugin source files.
 - **Notes**: Updated plugin source relative imports to `.js`, rebuilt package, and reran runtime import smoke successfully.
 
 ---
+## [ERR-20260306-004] vitest-esm-namespace-mocking
+
+**Logged**: 2026-03-06T19:54:39Z
+**Priority**: medium
+**Status**: resolved
+**Area**: tests
+
+### Summary
+New detector unit tests failed because `vi.spyOn` cannot redefine ESM namespace exports (`fs.readFile`).
+
+### Error
+```text
+TypeError: Cannot spy on export "readFile". Module namespace is not configurable in ESM.
+```
+
+### Context
+- Command attempted: `npm run test:unit`
+- File: `src/devServerDetector.unit.test.ts`
+- Initial test approach used `vi.spyOn(fs, "readFile")` and `vi.spyOn(http, "get")`
+
+### Suggested Fix
+Use explicit dependency injection hooks in the module under test instead of spying on ESM namespace exports.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/devServerDetector.unit.test.ts, src/devServerDetector.ts
+
+### Resolution
+- **Resolved**: 2026-03-06T19:54:39Z
+- **Commit/PR**: uncommitted
+- **Notes**: Added `setDetectorDepsForTests` and `resetDetectorDepsForTests`, then rewired tests to stub detector dependencies directly.
+
+---
+## [ERR-20260306-005] extension-test-activation-and-config-target
+
+**Logged**: 2026-03-06T20:08:38Z
+**Priority**: medium
+**Status**: resolved
+**Area**: tests
+
+### Summary
+New extension-host tests initially failed because the extension was not explicitly activated and settings were written to WorkspaceFolder without an opened workspace.
+
+### Error
+```text
+AssertionError: Expected no-server hover text, got:
+CodeExpectedError: Unable to write to Folder Settings because no workspace is opened.
+```
+
+### Context
+- Command attempted: `npm test`
+- File: `src/test/extension.test.ts`
+- `vscode.executeHoverProvider` returned no expected hover until explicit activation
+
+### Suggested Fix
+Activate the development extension explicitly in tests and write config with `ConfigurationTarget.Global` when no workspace is opened.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/test/extension.test.ts
+
+### Resolution
+- **Resolved**: 2026-03-06T20:08:38Z
+- **Commit/PR**: uncommitted
+- **Notes**: Added explicit activation helper, language assertion, brief wait before hover execution, and switched config update target to global.
+
+---
+## [ERR-20260306-006] demo-hover-script-sandbox-sigabrt
+
+**Logged**: 2026-03-06T20:11:40Z
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+### Summary
+`npm run test:demo:hover` aborted with `SIGABRT` when the VS Code extension host launched inside sandboxed execution.
+
+### Error
+```text
+Exit code: SIGABRT
+```
+
+### Context
+- Command attempted: `npm run test:demo:hover`
+- Failure occurred during `vscode-test` extension host startup in sandbox mode
+- Same command passed when rerun with escalated permissions
+
+### Suggested Fix
+Run extension-host demo tests with elevated permissions in this environment.
+
+### Metadata
+- Reproducible: yes
+- Related Files: package.json, src/test/extension.test.ts
+
+### Resolution
+- **Resolved**: 2026-03-06T20:11:40Z
+- **Commit/PR**: uncommitted
+- **Notes**: Added approved prefix rule `npm run test:demo:hover` and validated successful rerun.
+
+---

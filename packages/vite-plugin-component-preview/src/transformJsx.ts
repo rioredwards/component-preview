@@ -1,6 +1,6 @@
 import { parse } from "@babel/parser";
-import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection";
-import { TagInjectionPoint, TransformResult } from "./types";
+import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection.js";
+import { TagInjectionPoint, TransformResult } from "./types.js";
 
 type NodeLike = {
   type?: string;

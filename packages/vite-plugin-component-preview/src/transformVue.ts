@@ -1,7 +1,7 @@
 import { NodeTypes, parse as parseTemplate } from "@vue/compiler-dom";
 import { parse as parseSfc } from "@vue/compiler-sfc";
-import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection";
-import { TagInjectionPoint, TransformResult } from "./types";
+import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection.js";
+import { TagInjectionPoint, TransformResult } from "./types.js";
 
 type VueAstNode = {
   type?: number;

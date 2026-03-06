@@ -1,6 +1,6 @@
 import { parse as parseSvelte } from "svelte/compiler";
-import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection";
-import { TagInjectionPoint, TransformResult } from "./types";
+import { createLineStarts, injectPreviewAttributes, offsetToLineColumn } from "./injection.js";
+import { TagInjectionPoint, TransformResult } from "./types.js";
 
 type SvelteNode = {
   type?: string;

@@ -1,8 +1,8 @@
 import type { Plugin, ResolvedConfig } from "vite";
-import { normalizeRelativeFilePath, stripQueryAndHash } from "./pathUtils";
-import { transformJsx } from "./transformJsx";
-import { transformSvelte } from "./transformSvelte";
-import { transformVue } from "./transformVue";
+import { normalizeRelativeFilePath, stripQueryAndHash } from "./pathUtils.js";
+import { transformJsx } from "./transformJsx.js";
+import { transformSvelte } from "./transformSvelte.js";
+import { transformVue } from "./transformVue.js";
 
 const DEFAULT_MARKER_GLOBAL = "__COMPONENT_PREVIEW_PLUGIN__";
 const PLUGIN_VERSION = "0.1.0";

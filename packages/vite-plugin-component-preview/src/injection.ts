@@ -1,5 +1,5 @@
 import MagicString from "magic-string";
-import { TagInjectionPoint, TransformResult } from "./types";
+import { TagInjectionPoint, TransformResult } from "./types.js";
 
 export function createLineStarts(source: string): number[] {
   const starts = [0];

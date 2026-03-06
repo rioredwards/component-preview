@@ -33,7 +33,7 @@ Document and standardize package manager tooling for local validation commands.
 
 **Logged**: 2026-03-06T19:18:43Z
 **Priority**: high
-**Status**: pending
+**Status**: resolved
 **Area**: tests
 
 ### Summary
@@ -55,6 +55,11 @@ Add explicit CLI argument validation in `scripts/inspect-fibers.ts` and avoid tr
 ### Metadata
 - Reproducible: yes
 - Related Files: scripts/inspect-fibers.ts
+
+### Resolution
+- **Resolved**: 2026-03-06T19:25:00Z
+- **Commit/PR**: uncommitted
+- **Notes**: Added strict CLI parsing with `--help`, `--line`, `--file`, and `--url`; invalid values now fail fast with usage text. `npm run inspect-fibers -- --help` exits before Playwright startup.
 
 ---
 

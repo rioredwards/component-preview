@@ -1,18 +1,19 @@
 /**
- * Standalone fiber inspector — mirrors the extension's React render path so
+ * Standalone fiber inspector, mirrors the extension's React render path so
  * you can test it directly from Node.js without the EDH cycle.
  *
  * Usage:
- *   pnpm run inspect-fibers [line]
+ *   npm run inspect-fibers -- [line]
+ *   npm run inspect-fibers -- --line 21 --file /path/to/App.jsx --url http://localhost:5173
  *
  * Examples:
- *   pnpm run inspect-fibers          # uses TARGET_LINE below
- *   pnpm run inspect-fibers 19       # test line 19
- *   pnpm run inspect-fibers 21       # test line 21
+ *   npm run inspect-fibers -- --help
+ *   npm run inspect-fibers -- 19
+ *   npm run inspect-fibers -- --line 21
  *
  * What it does:
  *   1. Applies the same jsxDEV route intercept as devServerRenderer.ts
- *   2. Navigates to DEV_SERVER and waits for React to render
+ *   2. Navigates to the dev server and waits for React to render
  *   3. Walks the fiber tree and shows each fiber's data-src-line (Babel source line)
  *   4. Runs the same scoring algorithm as the extension
  *   5. Reports which element would be selected and screenshots it
@@ -25,9 +26,9 @@ import { scoreFiber } from "../src/fiberScoring";
 import { JSX_DEV_RUNTIME_PATCH } from "../src/jsxDevPatch";
 import { MAX_BYTES, QUALITY_STEPS } from "../src/screenshotConstants";
 
-const DEV_SERVER = "http://localhost:5173";
-const TARGET_FILE = "/home/node/react-app/src/App.jsx";
-const TARGET_LINE = parseInt(process.argv[2] ?? "11", 10);
+const DEFAULT_DEV_SERVER = "http://localhost:5173";
+const DEFAULT_TARGET_FILE = "/home/node/react-app/src/App.jsx";
+const DEFAULT_TARGET_LINE = 11;
 
 interface FiberDumpEntry {
   depth: number;
@@ -52,9 +53,169 @@ interface ScanResult {
   error?: string;
 }
 
+interface CliOptions {
+  targetLine: number;
+  targetFile: string;
+  devServer: string;
+}
+
+interface CliParseResult {
+  showHelp: boolean;
+  options?: CliOptions;
+  error?: string;
+}
+
+function usageText(): string {
+  return [
+    "inspect-fibers",
+    "",
+    "Usage:",
+    "  npm run inspect-fibers -- [line]",
+    "  npm run inspect-fibers -- --line <number> [--file <path>] [--url <http://localhost:5173>]",
+    "  npm run inspect-fibers -- --help",
+    "",
+    "Options:",
+    "  -h, --help       Show this help text and exit",
+    `  --line <number>  Target source line (default: ${DEFAULT_TARGET_LINE})`,
+    `  --file <path>    Source file path hint (default: ${DEFAULT_TARGET_FILE})`,
+    `  --url <url>      Dev server URL (default: ${DEFAULT_DEV_SERVER})`,
+  ].join("\n");
+}
+
+function parsePositiveInteger(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) {
+    return null;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    return null;
+  }
+  return parsed;
+}
+
+function parseDevServerUrl(raw: string): string | null {
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+function readFlagValue(args: string[], i: number, flag: string): { value?: string; nextIndex: number; error?: string } {
+  const inlinePrefix = `${flag}=`;
+  const current = args[i];
+  if (current.startsWith(inlinePrefix)) {
+    const value = current.slice(inlinePrefix.length);
+    if (!value) {
+      return { nextIndex: i, error: `Missing value for ${flag}` };
+    }
+    return { value, nextIndex: i };
+  }
+  if (current === flag) {
+    const next = args[i + 1];
+    if (!next || next.startsWith("-")) {
+      return { nextIndex: i, error: `Missing value for ${flag}` };
+    }
+    return { value: next, nextIndex: i + 1 };
+  }
+  return { nextIndex: i, error: `Unknown option: ${current}` };
+}
+
+function parseCliArgs(args: string[]): CliParseResult {
+  let targetLine = DEFAULT_TARGET_LINE;
+  let targetFile = DEFAULT_TARGET_FILE;
+  let devServer = DEFAULT_DEV_SERVER;
+  let positionalLine: string | null = null;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+
+    if (arg === "--help" || arg === "-h") {
+      return { showHelp: true };
+    }
+
+    if (arg === "--line" || arg.startsWith("--line=")) {
+      const read = readFlagValue(args, i, "--line");
+      if (read.error || !read.value) {
+        return { showHelp: false, error: read.error ?? "Invalid --line value" };
+      }
+      const parsedLine = parsePositiveInteger(read.value);
+      if (parsedLine === null) {
+        return { showHelp: false, error: `Invalid --line value: ${read.value}` };
+      }
+      targetLine = parsedLine;
+      i = read.nextIndex;
+      continue;
+    }
+
+    if (arg === "--file" || arg.startsWith("--file=")) {
+      const read = readFlagValue(args, i, "--file");
+      if (read.error || !read.value) {
+        return { showHelp: false, error: read.error ?? "Invalid --file value" };
+      }
+      targetFile = read.value;
+      i = read.nextIndex;
+      continue;
+    }
+
+    if (arg === "--url" || arg.startsWith("--url=")) {
+      const read = readFlagValue(args, i, "--url");
+      if (read.error || !read.value) {
+        return { showHelp: false, error: read.error ?? "Invalid --url value" };
+      }
+      const parsedUrl = parseDevServerUrl(read.value);
+      if (!parsedUrl) {
+        return { showHelp: false, error: `Invalid --url value: ${read.value}` };
+      }
+      devServer = parsedUrl;
+      i = read.nextIndex;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return { showHelp: false, error: `Unknown option: ${arg}` };
+    }
+
+    if (positionalLine !== null) {
+      return { showHelp: false, error: `Unexpected extra argument: ${arg}` };
+    }
+    positionalLine = arg;
+  }
+
+  if (positionalLine !== null) {
+    const parsedLine = parsePositiveInteger(positionalLine);
+    if (parsedLine === null) {
+      return { showHelp: false, error: `Invalid line value: ${positionalLine}` };
+    }
+    targetLine = parsedLine;
+  }
+
+  return {
+    showHelp: false,
+    options: { targetLine, targetFile, devServer },
+  };
+}
+
 (async () => {
-  const basename = path.basename(TARGET_FILE);
-  console.log(`Target: ${TARGET_FILE}:${TARGET_LINE}`);
+  const parsed = parseCliArgs(process.argv.slice(2));
+  if (parsed.showHelp) {
+    console.log(usageText());
+    process.exit(0);
+  }
+  if (parsed.error || !parsed.options) {
+    console.error(`Error: ${parsed.error ?? "Invalid arguments"}`);
+    console.log("");
+    console.log(usageText());
+    process.exit(1);
+  }
+
+  const { targetLine, targetFile, devServer } = parsed.options;
+  const basename = path.basename(targetFile);
+  console.log(`Target: ${targetFile}:${targetLine}`);
   console.log(`Basename: ${basename}\n`);
 
   const browser = await chromium.launch({ headless: true });
@@ -70,8 +231,8 @@ interface ScanResult {
     await route.fulfill({ body: original + JSX_DEV_RUNTIME_PATCH, headers });
   });
 
-  console.log("Navigating to", DEV_SERVER, "(with jsxDEV intercept active)");
-  await page.goto(DEV_SERVER, { waitUntil: "networkidle" });
+  console.log("Navigating to", devServer, "(with jsxDEV intercept active)");
+  await page.goto(devServer, { waitUntil: "networkidle" });
   console.log("Page loaded:", page.url());
 
   await page.waitForFunction(
@@ -127,7 +288,7 @@ interface ScanResult {
         return m ? parseInt(m[1]) : null;
       }
 
-      // Inline scoreFiber (browser boundary — can't import Node modules)
+      // Inline scoreFiber, browser boundary cannot import Node modules.
       function scoreFiber(candidateLine: number): number {
         if (candidateLine === targetLine) {
           return 0;
@@ -197,7 +358,7 @@ interface ScanResult {
 
       return { dump, candidates, winner };
     },
-    { basename, targetLine: TARGET_LINE },
+    { basename, targetLine },
   );
 
   if (result.error) {
@@ -208,7 +369,7 @@ interface ScanResult {
 
   // Verify Node-side scoreFiber matches browser-side
   for (const c of result.candidates) {
-    const nodeScore = scoreFiber(c.srcLine, TARGET_LINE);
+    const nodeScore = scoreFiber(c.srcLine, targetLine);
     if (nodeScore !== c.score) {
       console.warn(
         `SCORE MISMATCH: browser=${c.score} node=${nodeScore} for line=${c.srcLine}`,
@@ -220,13 +381,13 @@ interface ScanResult {
   console.log("Fiber tree (data-src-line values):");
   for (const f of result.dump) {
     const indent = "  ".repeat(f.depth);
-    const lineStr = f.srcLine != null ? `line=${f.srcLine}` : "line=?";
+    const lineStr = f.srcLine !== null ? `line=${f.srcLine}` : "line=?";
     const domStr = f.hasDom ? `-> <${f.domTag}>` : "(no DOM)";
     console.log(`${indent}${f.typeName}  ${lineStr}  ${domStr}`);
   }
 
   // -- Print candidates and winner --
-  console.log(`\nCandidates for line ${TARGET_LINE}:`);
+  console.log(`\nCandidates for line ${targetLine}:`);
   for (const c of result.candidates) {
     const marker = c === result.winner ? " <- SELECTED" : "";
     console.log(`  <${c.domTag}>  line=${c.srcLine}  score=${c.score}${marker}`);
@@ -241,7 +402,7 @@ interface ScanResult {
   // -- Screenshot the selected element (same as extension) --
   console.log(`\n-> Screenshotting <${result.winner.domTag}> (line=${result.winner.srcLine})`);
 
-  const outPath = `/tmp/inspect-fibers-${TARGET_LINE}.jpeg`;
+  const outPath = `/tmp/inspect-fibers-${targetLine}.jpeg`;
   const elementHandle = await page.evaluateHandle(
     ({ basename, targetLine }: { basename: string; targetLine: number }) => {
       const rootEl = document.getElementById("root") ?? document.body;
@@ -310,7 +471,7 @@ interface ScanResult {
       }
       return candidates[0]?.element ?? null;
     },
-    { basename, targetLine: TARGET_LINE },
+    { basename, targetLine },
   );
 
   const el = elementHandle.asElement();

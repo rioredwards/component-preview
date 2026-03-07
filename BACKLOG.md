@@ -29,6 +29,38 @@ Flat, priority-ordered ticket list.
 
 ---
 
+- [P1] AI-first setup and troubleshooting prompts (README + error UX)
+  - Acceptance criteria:
+    - README includes a copy-paste "AI setup prompt" near the top that guides an AI agent to install and configure component-preview in an existing repo.
+    - README includes a copy-paste "AI troubleshooting prompt" for common failures (dev server mismatch, plugin missing, no adapter detected).
+    - Hover error surfaces include an "AI help" affordance (or equivalent) that provides a context-rich prompt users can copy quickly.
+    - Prompt text includes key diagnostics automatically when possible (workspace file, hovered file/line, detected dev server URL, last error message, framework hints).
+    - Prompts are concise, deterministic, and safe (no secret exfiltration instructions).
+  - Dependencies:
+    - Minimal UX decision for how prompts are exposed (link/button/command palette action).
+  - Notes:
+    - Intended as a high-leverage beta usability win, especially for AI-native users.
+
+- [P0] Svelte plugin transform must ignore style/script virtual modules (currently breaks Vite dev server)
+  - Acceptance criteria:
+    - `vite-plugin-component-preview` does not run Svelte markup transform on virtual module ids like `App.svelte?svelte&type=style...` or other non-markup sub-requests.
+    - Running the Vite Svelte fixture with plugin enabled does not throw parser errors such as `Expected token }` from CSS style blocks.
+    - Add regression test covering a style virtual-module id.
+  - Dependencies:
+    - Adjust transform id filtering in plugin entrypoint.
+  - Notes:
+    - Observed error: plugin attempted Svelte parse on CSS payload from `?type=style` request.
+
+- [P1] Svelte hover should work without requiring separate Svelte VS Code tooling (or show explicit guidance)
+  - Acceptance criteria:
+    - In a plain VS Code setup (component-preview installed, no extra Svelte extensions), hovering in `*.svelte` files still triggers component-preview behavior.
+    - If technical constraints require external Svelte tooling, show an explicit hover/notification explaining exactly what is missing and how to install it.
+    - Add docs note in README setup/troubleshooting for Svelte expectations.
+  - Dependencies:
+    - Decide whether to support pattern-based registration for `*.svelte` files or keep language-id registration and add guided onboarding.
+  - Notes:
+    - Reported during manual smoke tests as "no hover shown" in a Vite Svelte JS fixture.
+
 - [P1] Fallback hover on composite React components should capture full rendered output (not first host child)
   - Acceptance criteria:
     - Hovering component declarations/usages for fragment-returning components captures the full component output (or a clearly better container) rather than a single child node (e.g., logo image block).

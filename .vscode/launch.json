@@ -11,7 +11,7 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/fixtures/hover-fixture-debug-vite-react-ts"
+        "${workspaceFolder}/fixtures/hover-fixture-debug-vite-svelte-js"
       ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     },

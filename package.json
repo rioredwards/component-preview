@@ -2,7 +2,7 @@
   "name": "component-preview",
   "displayName": "component-preview",
   "description": "Instant component previews on hover for HTML/React/Vue/Svelte in local dev.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "RioEdwards",
   "author": "Rio Edwards <rioredwards@gmail.com>",
   "homepage": "https://github.com/rioredwards/component-preview",

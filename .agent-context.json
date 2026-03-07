@@ -1,0 +1,11 @@
+{
+  "profile": "vscode-extension",
+  "targets": [
+    "openclaw",
+    "claude",
+    "cursor",
+    "agents"
+  ],
+  "includeGlobal": false,
+  "extraSkills": []
+}

@@ -113,3 +113,95 @@ Keep an activation helper in extension tests and default to `ConfigurationTarget
 - Pattern-Key: harden.vscode-test-activation-and-config-scope
 
 ---
+## [LRN-20260306-006] correction
+
+**Logged**: 2026-03-07T00:55:00Z
+**Priority**: high
+**Status**: pending
+**Area**: config
+
+### Summary
+Custom VS Code background task matchers must include a `pattern` section, not only `background`.
+
+### Details
+The first F5 automation attempt defined a custom problem matcher with only `owner` and `background`. VS Code rejected the task with: "description can't be converted into a problem matcher", so prelaunch never ran.
+
+### Suggested Action
+When defining custom background matchers, always include a minimal `pattern` entry and verify the task launches from VS Code once before relying on it.
+
+### Metadata
+- Source: user_feedback
+- Related Files: .vscode/tasks.json
+- Tags: correction, vscode-tasks, prelaunch, problem-matcher
+
+---
+## [LRN-20260307-007] correction
+
+**Logged**: 2026-03-07T01:01:36Z
+**Priority**: high
+**Status**: pending
+**Area**: config
+
+### Summary
+For background-only VS Code tasks, a minimal `file + message` matcher is not always sufficient. Current schema validation can require `kind: "file"` or a line/location group.
+
+### Details
+I first changed the matcher from `message` only to `file + message`, but the task provider still rejected it with a stricter validation error about missing `kind` or line/location. This caused repeated failure and user frustration.
+
+### Suggested Action
+Use a safe standard pattern for background-only custom matchers: include `file`, `line` or `location`, and `message` in an inert regex, then rely on `background.beginsPattern` and `background.endsPattern` for readiness state.
+
+### Metadata
+- Source: user_feedback
+- Related Files: .vscode/tasks.json
+- Tags: correction, vscode-tasks, problem-matcher, schema
+- See Also: LRN-20260306-006
+- Pattern-Key: harden.vscode-problem-matcher-background-pattern
+
+---
+## [LRN-20260307-008] best_practice
+
+**Logged**: 2026-03-07T01:15:00Z
+**Priority**: high
+**Status**: pending
+**Area**: config
+
+### Summary
+Keep scaffold default `Run Extension` launch independent from integration fixture automation.
+
+### Details
+Coupling `F5` to a custom fixture prelaunch task made normal extension debugging fail when task matcher configuration broke. This made core development flow depend on optional closed-loop setup.
+
+### Suggested Action
+Use two launch profiles: default `Run Extension` for daily work and a separate explicit `Run Extension (with fixture)` profile for closed-loop validation.
+
+### Metadata
+- Source: simplify-and-harden
+- Related Files: .vscode/launch.json, .vscode/tasks.json
+- Tags: vscode, launch-config, debug-flow, reliability
+- Pattern-Key: harden.separate-default-debug-from-integration-automation
+
+---
+## [LRN-20260307-009] best_practice
+
+**Logged**: 2026-03-07T01:24:00Z
+**Priority**: high
+**Status**: pending
+**Area**: config
+
+### Summary
+On macOS, VS Code launched from the GUI may not include Homebrew paths in task `PATH`, causing npm prelaunch tasks to fail with exit code 127.
+
+### Details
+`npm run compile` succeeds in shell, but prelaunch task failed with `127`. Reproduced by running with `PATH=/usr/bin:/bin`, which produced `command not found: npm` and exit `127`, matching the VS Code popup.
+
+### Suggested Action
+Do not make default `F5` depend on npm prelaunch tasks unless `PATH` handling is explicitly hardened. Keep compile/fixture automation opt-in via separate launch profile.
+
+### Metadata
+- Source: error
+- Related Files: .vscode/launch.json, .vscode/tasks.json
+- Tags: vscode, path, macos, debug
+- Pattern-Key: harden.vscode-gui-path-vs-shell-path
+
+---

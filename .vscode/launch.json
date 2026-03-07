@@ -9,7 +9,18 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "/tmp/hover-fixture-debug"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    },
+    {
+      "name": "Run Extension (with fixture)",
+      "type": "extensionHost",
+      "request": "launch",
+      "preLaunchTask": "prepare: run extension with fixture",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "${workspaceFolder}/fixtures/hover-fixture-debug"
+      ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }
   ]

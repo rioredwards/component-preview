@@ -79,3 +79,19 @@ For framework files, the extension checks in this order:
 - Save file changes and hover again.
 - Confirm your app route currently renders the hovered component.
 - If two files share the same name, plugin mode is recommended for exact path matching.
+
+## Debug Fixture App
+
+This repo includes a stable React + Vite fixture for hover debugging:
+
+- `fixtures/hover-fixture-debug`
+
+From repo root:
+
+```sh
+npm run fixture:hover:dev
+```
+
+For one-key debug, press `F5` in this repo. It now auto-runs fixture setup and ensures
+`http://127.0.0.1:5173` is live before launching the Extension Development Host on
+`fixtures/hover-fixture-debug`.

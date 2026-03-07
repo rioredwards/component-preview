@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import { inlineStyles } from "./cssInliner";
 import { detectDevServer } from "./devServerDetector";
 import {
+  DevServerMatchMetadata,
   ERROR_MISSING_VITE_PLUGIN,
   MissingVitePluginError,
   renderFromDevServer,
@@ -100,8 +101,9 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     }
 
     const outputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
+    let matchMetadata: DevServerMatchMetadata | null = null;
     try {
-      await renderFromDevServer({
+      matchMetadata = await renderFromDevServer({
         devServerUrl,
         workspaceRoot,
         filePath: document.uri.fsPath,
@@ -124,7 +126,12 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = await this.buildHover(outputPath, elementId, document.uri.toString());
+    const hover = await this.buildHover(
+      outputPath,
+      elementId,
+      document.uri.toString(),
+      matchMetadata,
+    );
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
@@ -179,12 +186,17 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return hover;
   }
 
-  private async buildHover(imagePath: string, elementId: string, documentUri: string): Promise<vscode.Hover> {
+  private async buildHover(
+    imagePath: string,
+    elementId: string,
+    documentUri: string,
+    matchMetadata: DevServerMatchMetadata | null = null,
+  ): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
     const base64 = (await fs.readFile(imagePath)).toString("base64");
 
-    const args = encodeURIComponent(JSON.stringify([elementId, documentUri]));
+    const args = encodeURIComponent(JSON.stringify([elementId, documentUri, matchMetadata]));
     const attachLink = `[📷 Attach image](command:component-preview.attachImage?${args})`;
 
     const md = new vscode.MarkdownString(

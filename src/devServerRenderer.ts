@@ -16,6 +16,24 @@ export interface DevServerRenderOptions {
   outputPath: string;
 }
 
+type SourceLocationOrigin = "data-cp" | "data-src" | "request";
+
+export interface DevServerMatchMetadata {
+  adapter: FrameworkAdapter["name"];
+  element: {
+    tag: string;
+    id: string | null;
+    className: string | null;
+    text: string | null;
+  };
+  source: {
+    file: string;
+    line: number;
+    column: number;
+    origin: SourceLocationOrigin;
+  };
+}
+
 export const ERROR_MISSING_VITE_PLUGIN = "MISSING_VITE_PLUGIN";
 
 export class MissingVitePluginError extends Error {
@@ -107,7 +125,7 @@ async function findElementWithFallbacks(
   opts: DevServerRenderOptions,
   selected: FrameworkAdapter,
   detected: FrameworkAdapter[],
-): Promise<ElementHandle<Element> | null> {
+): Promise<{ element: ElementHandle<Element>; adapter: FrameworkAdapter } | null> {
   const request: FindElementRequest = {
     workspaceRoot: opts.workspaceRoot,
     absoluteFilePath: opts.filePath,
@@ -118,7 +136,7 @@ async function findElementWithFallbacks(
   const first = await selected.findElement(page, request);
   if (first) {
     selectedAdapterByOrigin.set(getOriginKey(opts.devServerUrl), selected.name);
-    return first;
+    return { element: first, adapter: selected };
   }
 
   for (const adapter of detected) {
@@ -135,42 +153,122 @@ async function findElementWithFallbacks(
         "did not find a matching element.",
       );
       selectedAdapterByOrigin.set(getOriginKey(opts.devServerUrl), adapter.name);
-      return next;
+      return { element: next, adapter };
     }
   }
 
   return null;
 }
 
-export async function renderFromDevServer(opts: DevServerRenderOptions): Promise<void> {
+function coalesceSourceLocation(
+  raw: {
+    cpFile: string | null;
+    cpLine: number | null;
+    cpCol: number | null;
+    srcFile: string | null;
+    srcLine: number | null;
+  },
+  opts: DevServerRenderOptions,
+): DevServerMatchMetadata["source"] {
+  if (raw.cpFile && raw.cpLine !== null) {
+    return {
+      file: raw.cpFile,
+      line: raw.cpLine,
+      column: raw.cpCol ?? opts.column,
+      origin: "data-cp",
+    };
+  }
+
+  if (raw.srcFile && raw.srcLine !== null) {
+    return {
+      file: raw.srcFile,
+      line: raw.srcLine,
+      column: opts.column,
+      origin: "data-src",
+    };
+  }
+
+  return {
+    file: opts.filePath,
+    line: opts.line,
+    column: opts.column,
+    origin: "request",
+  };
+}
+
+export async function renderFromDevServer(
+  opts: DevServerRenderOptions,
+): Promise<DevServerMatchMetadata> {
   const page = await getDevPage(opts.devServerUrl);
 
   const { selected, detected } = await pickAdapter(page, opts);
-  const elementHandle = await findElementWithFallbacks(page, opts, selected, detected);
+  const matched = await findElementWithFallbacks(page, opts, selected, detected);
 
-  if (!elementHandle) {
+  if (!matched) {
     throw new Error(
       `No element found for ${opts.filePath}:${opts.line}:${opts.column} ` +
         `using adapters [${detected.map((a) => a.name).join(", ")}].`,
     );
   }
 
-  const infoPayload = await elementHandle.evaluate((el) => ({
-    tag: el.tagName.toLowerCase(),
-    id: el.id || null,
-    cls: (el.className as string).slice(0, 80) || null,
-    text: el.textContent?.trim().slice(0, 80) || null,
-    box: el.getBoundingClientRect(),
-  }));
-  log("renderFromDevServer: matched", JSON.stringify(infoPayload));
+  const infoPayload = await matched.element.evaluate((el) => {
+    const className =
+      typeof el.className === "string" ? el.className : (el.getAttribute("class") ?? "");
+    const parseNumericAttribute = (name: string): number | null => {
+      const raw = el.getAttribute(name);
+      if (!raw) {
+        return null;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    return {
+      tag: el.tagName.toLowerCase(),
+      id: el.id || null,
+      cls: className.slice(0, 80) || null,
+      text: el.textContent?.trim().slice(0, 80) || null,
+      cpFile: el.getAttribute("data-cp-file"),
+      cpLine: parseNumericAttribute("data-cp-line"),
+      cpCol: parseNumericAttribute("data-cp-col"),
+      srcFile: el.getAttribute("data-src-file"),
+      srcLine: parseNumericAttribute("data-src-line"),
+      box: el.getBoundingClientRect(),
+    };
+  });
+
+  const match: DevServerMatchMetadata = {
+    adapter: matched.adapter.name,
+    element: {
+      tag: infoPayload.tag,
+      id: infoPayload.id,
+      className: infoPayload.cls,
+      text: infoPayload.text,
+    },
+    source: coalesceSourceLocation(infoPayload, opts),
+  };
+
+  log(
+    "renderFromDevServer: matched",
+    JSON.stringify({
+      adapter: match.adapter,
+      tag: match.element.tag,
+      id: match.element.id,
+      cls: match.element.className,
+      text: match.element.text,
+      source: match.source,
+      box: infoPayload.box,
+    }),
+  );
 
   const ctx = await getContext();
   await page.evaluate(() => window.scrollTo(0, 0));
   await settlePageForCapture(page);
 
-  const buf = await captureAdaptiveJpeg(elementHandle, page, ctx);
+  const buf = await captureAdaptiveJpeg(matched.element, page, ctx);
   log(`renderFromDevServer: screenshot size=${buf.length}`);
   await fs.writeFile(opts.outputPath, buf);
+  return match;
 }
 
 export function disposeDevPage(): void {

@@ -66,6 +66,39 @@
       "label": "tasks: watch-tests",
       "dependsOn": ["npm: watch", "npm: watch-tests"],
       "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "script": "fixture:hover:ensure",
+      "label": "npm: fixture:hover:ensure",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "fixture",
+        "pattern": [
+          {
+            "regexp": "^\\[fixture-problem\\] (.+):(\\d+):(\\d+): (.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "message": 4
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "\\[fixture\\] (Starting dev server|Dev server already running)",
+          "endsPattern": "\\[fixture\\] Dev server ready at http://127\\.0\\.0\\.1:5173/"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "prepare: run extension with fixture",
+      "dependsOrder": "sequence",
+      "dependsOn": ["npm: fixture:hover:ensure", "compile"],
+      "problemMatcher": []
     }
   ]
 }

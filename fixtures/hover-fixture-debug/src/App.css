@@ -1,0 +1,227 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 10%, #2f58c6 0%, #1f2b52 28%, transparent 58%),
+    radial-gradient(circle at 85% 20%, #00b8a944 0%, transparent 32%),
+    linear-gradient(160deg, #0f162f, #1d1b2f 45%, #121728);
+  color: #ecf0ff;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 2rem;
+  backdrop-filter: blur(8px);
+  background: #0f1424cc;
+  border-bottom: 1px solid #ffffff14;
+}
+
+.brand {
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.shell {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.heroPanel {
+  padding: 2rem;
+  border: 1px solid #ffffff1c;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #ffffff14, #ffffff08);
+  box-shadow: 0 30px 50px #060a1f66;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #9eb5ff;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.heroTitle {
+  margin: 0.7rem 0 0;
+  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+  line-height: 1.06;
+}
+
+.heroCopy {
+  width: min(66ch, 100%);
+  color: #cad7ff;
+  margin-top: 0.8rem;
+}
+
+.heroActions {
+  margin-top: 1.4rem;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.primaryButton,
+.ghostButton,
+.planButton {
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.primaryButton {
+  background: linear-gradient(125deg, #6f82ff, #71d8ff);
+  color: #061022;
+  font-weight: 700;
+  padding: 0.7rem 1.1rem;
+}
+
+.ghostButton {
+  padding: 0.65rem 1rem;
+  background: #ffffff0f;
+  color: #edf2ff;
+  border: 1px solid #ffffff1d;
+}
+
+.primaryButton:hover,
+.ghostButton:hover,
+.planButton:hover {
+  transform: translateY(-1px);
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.metricCard {
+  background: #ffffff0d;
+  border: 1px solid #ffffff1a;
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.metricLabel {
+  margin: 0;
+  color: #a9b7dd;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metricValue {
+  margin: 0.2rem 0 0;
+  font-size: 1.95rem;
+  font-weight: 700;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.planCard {
+  position: relative;
+  overflow: visible;
+  padding: 1.1rem;
+  border-radius: 18px;
+  border: 1px solid #ffffff1a;
+  background: #111827cc;
+  cursor: pointer;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.planCard::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 26px;
+  z-index: -1;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--accent) 85%, #fff 15%), transparent 72%);
+  filter: blur(18px);
+  transition: opacity 180ms ease;
+}
+
+.planCard.isActive::before {
+  opacity: 0.9;
+}
+
+.planCard.isActive {
+  border-color: color-mix(in srgb, var(--accent) 72%, white 28%);
+}
+
+.planHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.planHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.planPrice {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.planBlurb {
+  margin: 0.65rem 0 0;
+  color: #c3d1ed;
+}
+
+.planCard ul {
+  margin: 0.9rem 0 0;
+  padding-left: 1rem;
+  color: #dce4fb;
+}
+
+.planCard li + li {
+  margin-top: 0.45rem;
+}
+
+.planButton {
+  margin-top: 0.95rem;
+  width: 100%;
+  background: #ffffff11;
+  color: #eef3ff;
+  border: 1px solid #ffffff1f;
+  padding: 0.55rem 0.85rem;
+}
+
+.statusBanner {
+  margin-top: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #ffffff21;
+  background: #ffffff0f;
+  padding: 0.75rem 0.95rem;
+}
+
+@media (max-width: 1200px) {
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+}

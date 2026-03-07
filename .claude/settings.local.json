@@ -10,7 +10,19 @@
       "WebFetch(domain:vshaxe.github.io)",
       "Bash(pnpm add:*)",
       "Bash(docker ps:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(npm run:*)",
+      "Bash(curl:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx esbuild:*)",
+      "Bash(npm install:*)",
+      "Bash(lsof:*)",
+      "Bash(npm:*)",
+      "Bash(git checkout:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx skills:*)"
     ]
   }
 }

@@ -13,6 +13,7 @@ tooltip. The goal is to make frontend development dramatically faster by giving 
 instant, accurate visual of any element without leaving the editor or running a dev server.
 
 This is intended to become a commercial product:
+
 - **Free tier** — core preview functionality, broadly useful out of the box
 - **Pro tier** — advanced features requiring infrastructure (see Product Tiers below)
 
@@ -23,10 +24,10 @@ This is intended to become a commercial product:
 The extension uses **two different rendering paths** depending on project type. See
 `docs/architecture-rendering-strategy.md` for full rationale and technical detail.
 
-| Project type | Rendering path |
-|---|---|
-| Static `.html` files | Playwright renders a local temp file; stylesheets are inlined |
-| React / Vue / framework apps | Playwright pointed at the user's **running dev server** |
+| Project type                 | Rendering path                                                |
+| ---------------------------- | ------------------------------------------------------------- |
+| Static `.html` files         | Playwright renders a local temp file; stylesheets are inlined |
+| React / Vue / framework apps | Playwright pointed at the user's **running dev server**       |
 
 The dev server path avoids rebuilding the user's build system. Developers working on a React/Vue
 app are almost always running a dev server anyway — requiring it is not a meaningful friction.
@@ -40,12 +41,14 @@ Milestones are ordered by dependency and complexity. Each should be treated as a
 increment — don't start the next until the current is solid.
 
 ### Milestone 1 — Plain HTML (✅ Done)
+
 - Hover over any element in a `.html` file
 - Playwright renders it headlessly, screenshot appears in tooltip
 - 50-entry / 5-min TTL cache keyed on `uri|version|offset`
 - JPEG embedded as base64 data URI (bypasses VS Code CSP)
 
 ### Milestone 2 — External Stylesheets (static HTML path) (✅ Done)
+
 - Detect `<link rel="stylesheet">` tags in the document
 - Resolve relative paths to absolute file paths
 - Inline stylesheets as `<style>` blocks before writing the temp file
@@ -53,8 +56,10 @@ increment — don't start the next until the current is solid.
 - See `docs/plan-milestone-2.md`
 
 ### Milestone 3 — React + Dev Server (✅ Done)
+
 The pivot away from reimplementing the build system. See `docs/architecture-rendering-strategy.md`
 and `docs/react-fiber-internals.md`.
+
 - Detect a running dev server (scan common ports, read `.env` / `vite.config`)
 - Navigate Playwright to the dev server root (persistent page, reused across hovers)
 - Walk the fiber tree directly via `__reactContainer$` on the root DOM element
@@ -64,18 +69,22 @@ and `docs/react-fiber-internals.md`.
 - Cache key: `uri\x00line:col`
 
 ### Milestone 4 — Vue + Other Frameworks
+
 - Same dev server approach as M3
 - Vue DevTools exposes a similar component tree via `window.__VUE_DEVTOOLS_GLOBAL_HOOK__`
 - Svelte: investigate equivalent debug hooks
 
 ### Milestone 5 — CSS Variants (static HTML path only, deferred)
+
 Only relevant for projects without a dev server (plain `.html` files with Tailwind / SCSS).
 Deprioritized until M3 and M4 are proven.
+
 - Detect CSS preprocessor/framework via `package.json` / config files
 - **Tailwind**: lightweight JIT pass over the element's class list before rendering
 - **SCSS/Less**: compile source stylesheet to CSS before injecting
 
 ### Milestone 6 — Pro Infrastructure
+
 - Cloud-based rendering (offload Playwright from the user's machine)
 - Review links (shareable URLs for rendered previews)
 - CI/CD integration (auto-screenshot components in PRs)
@@ -86,11 +95,13 @@ Deprioritized until M3 and M4 are proven.
 ## Product Tiers
 
 ### Free
+
 - All local rendering features (Milestones 1–5)
 - Unlimited usage, no account required
 - Open core
 
 ### Pro (requires account + subscription)
+
 - **Diff views** — side-by-side before/after when you edit a component
 - **AI integration** — ask questions about the rendered output, get suggestions
 - **PR screenshots** — automatically attach component previews to pull requests
@@ -105,12 +116,14 @@ Deprioritized until M3 and M4 are proven.
 ## Engineering Values
 
 ### Correctness & Reliability First
+
 - Handle errors explicitly. Never swallow exceptions silently.
 - Validate all external input with **Zod** (file content, config files, API responses).
 - Write defensive code at system boundaries; trust internal contracts.
 - Edge cases are not afterthoughts — enumerate them before implementation.
 
 ### Performance is a Feature
+
 - This extension runs Playwright (a heavy process). Every decision must account for that.
 - Lazy-initialize everything. The browser should not launch until the first hover.
 - Cache aggressively. Re-renders should only happen when genuinely needed.
@@ -118,6 +131,7 @@ Deprioritized until M3 and M4 are proven.
 - Measure extension activation time and hover-to-preview latency; keep them bounded.
 
 ### Readability & Maintainability
+
 - Code is read far more than it is written. Optimize for reading.
 - Each module has one clear responsibility (see architecture in `CLAUDE.md`).
 - Use **JSDoc** on all exported functions and classes — parameters, return types, and a
@@ -127,17 +141,20 @@ Deprioritized until M3 and M4 are proven.
   opaque one.
 
 ### Testability
+
 - Write code that can be tested in isolation. Inject dependencies; don't hardcode them.
 - Pure functions wherever possible (annotator, cache logic, path resolution).
 - Integration tests for the render pipeline using known HTML fixtures.
 - Aim for tests that catch real bugs, not tests that just assert the code runs.
 
 ### DRY Without Premature Abstraction
+
 - Don't abstract until you have three real instances of the same pattern.
 - Prefer duplication over a wrong abstraction.
 - Shared utilities live in `src/utils/` only when they are genuinely reusable.
 
 ### Security
+
 - Never execute arbitrary code from the document without sandboxing.
 - Sanitize all file paths to prevent traversal attacks.
 - The image server (if ever re-enabled) must only serve from `previewDir`.
@@ -148,6 +165,7 @@ Deprioritized until M3 and M4 are proven.
 ## Development Workflow
 
 ### Branching Strategy
+
 - `main` — always releasable, protected
 - `dev` — integration branch for in-progress milestone work
 - `feat/<name>` — individual features or sub-features
@@ -155,24 +173,28 @@ Deprioritized until M3 and M4 are proven.
 - `chore/<name>` — non-functional changes (deps, config, docs)
 
 ### Versioning
+
 - Follow **SemVer**: `MAJOR.MINOR.PATCH`
 - MAJOR: breaking changes to the extension API or configuration format
 - MINOR: new features (new framework support, new UI)
 - PATCH: bug fixes and performance improvements
 
 ### Ticket System
+
 - Work is tracked in `BACKLOG.md` as a flat bullet list, ordered by priority.
 - Each ticket has: a short title, acceptance criteria, and any known dependencies.
 - Move tickets to `plan.md` (the active sprint) when ready to work on them.
 - Close tickets with the commit that ships them (reference the ticket in the commit message).
 
 ### Commit Style
+
 - Format: `type(scope): short description`
 - Types: `feat`, `fix`, `perf`, `refactor`, `test`, `chore`, `docs`
 - Example: `feat(renderer): support Tailwind JIT pass before screenshot`
 - Keep commits small and focused. One logical change per commit.
 
 ### AI-Assisted Development
+
 - AI is a collaborator, not an autocomplete. Use it for design, review, and generation.
 - Always review AI-generated code before committing. Understand what it does.
 - Keep `CLAUDE.md` and `VISION.md` up to date — they are the AI's long-term memory.
@@ -181,6 +203,7 @@ Deprioritized until M3 and M4 are proven.
   in `.claude/memory/`.
 
 ### Observability
+
 - Structured logging via a central logger module (to be built in Milestone 2).
 - Log levels: `debug`, `info`, `warn`, `error`.
 - Errors include: what failed, what inputs caused it, and what the user impact is.
@@ -192,18 +215,18 @@ Deprioritized until M3 and M4 are proven.
 
 ## Technology Choices
 
-| Concern | Tool | Rationale |
-|---|---|---|
-| HTML parsing | `node-html-parser` | Pure JS, fast, no native deps |
-| Rendering | `playwright` (Chromium) | Industry standard, reliable, headless |
-| Bundling | `esbuild` | Fast, simple config, good tree-shaking |
-| Type safety | TypeScript strict mode | Catch bugs at compile time |
-| Schema validation | `zod` | Runtime safety at all external boundaries |
-| HTTP (if needed) | `axios` | Consistent API, good error handling |
-| CSS compilation | `sass`, `postcss` | Per-milestone, added when needed |
-| JSX compilation | `esbuild` (built-in) | Already in the stack, handles TSX/JSX well |
-| Testing | `@vscode/test-cli` + `mocha` | Official VS Code test runner |
-| Linting | `eslint` + `typescript-eslint` | Enforces consistent style |
+| Concern           | Tool                           | Rationale                                  |
+| ----------------- | ------------------------------ | ------------------------------------------ |
+| HTML parsing      | `node-html-parser`             | Pure JS, fast, no native deps              |
+| Rendering         | `playwright` (Chromium)        | Industry standard, reliable, headless      |
+| Bundling          | `esbuild`                      | Fast, simple config, good tree-shaking     |
+| Type safety       | TypeScript strict mode         | Catch bugs at compile time                 |
+| Schema validation | `zod`                          | Runtime safety at all external boundaries  |
+| HTTP (if needed)  | `axios`                        | Consistent API, good error handling        |
+| CSS compilation   | `sass`, `postcss`              | Per-milestone, added when needed           |
+| JSX compilation   | `esbuild` (built-in)           | Already in the stack, handles TSX/JSX well |
+| Testing           | `@vscode/test-cli` + `mocha`   | Official VS Code test runner               |
+| Linting           | `eslint` + `typescript-eslint` | Enforces consistent style                  |
 
 ---
 
@@ -213,6 +236,7 @@ This section documents confirmed platform/ecosystem constraints that affect desi
 Understanding these upfront prevents re-discovering them mid-implementation.
 
 ### VS Code `MarkdownString` content length cap (~100,000 chars)
+
 **Status:** Confirmed
 **Impact:** High
 **Affects:** Milestone 1+ (all hover-based rendering)
@@ -224,6 +248,7 @@ that limit. When truncated, the raw base64 string renders as text in the tooltip
 image.
 
 **Workarounds to evaluate (in order of preference):**
+
 1. **Resize/compress the screenshot** — render at a lower resolution or cap viewport dimensions;
    convert PNG → JPEG at reduced quality before encoding (JPEG is ~5–10× smaller for photos/UIs)
 2. **Crop to element bounds** — Playwright's `locator.screenshot()` already crops to the element,
@@ -240,6 +265,7 @@ before base64-encoding. This keeps most previews well under the limit without vi
 ---
 
 ### VS Code hover tooltip CSP blocks `http://` image URLs
+
 **Status:** Confirmed
 **Impact:** High (already worked around)
 **Affects:** Image serving strategy
@@ -254,6 +280,7 @@ tag renders but the browser never fetches the URL — only a broken image icon a
 ---
 
 ### Playwright is a heavy dependency for a VS Code extension
+
 **Status:** Known architectural constraint
 **Impact:** Medium
 **Affects:** Installation size, activation time, memory usage
@@ -262,17 +289,20 @@ Playwright bundles a full Chromium binary (~150–300 MB depending on platform).
 large for a VS Code extension. The browser process also consumes significant RAM when running.
 
 **Mitigations in place:**
+
 - Singleton browser — launched once on first hover, reused across all subsequent renders
 - Lazy init — browser does not start at extension activation, only on first hover
 - `page.close()` after every render — pages are not pooled
 
 **Future mitigations to consider:**
+
 - Idle timeout — close the browser after N minutes of inactivity, re-launch on next hover
 - Cloud rendering (Pro tier) — offload Playwright entirely from the user's machine
 
 ---
 
 ### `onLanguage:html` activation — extension inactive until an HTML file is opened
+
 **Status:** Known, intentional
 **Impact:** Low
 **Affects:** Developer experience during testing
@@ -284,6 +314,7 @@ temporarily set `"activationEvents": ["*"]` in `package.json` to activate on sta
 ---
 
 ### Dev container: Extension Development Host must target the container
+
 **Status:** Confirmed, documented
 **Impact:** High during development only
 **Affects:** Local dev setup

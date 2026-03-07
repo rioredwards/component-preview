@@ -1,53 +1,41 @@
 {
   "name": "component-preview",
   "displayName": "component-preview",
-  "description": "Instant component previews on hover for HTML/TSX/JSX/Vue/Svelte in local dev.",
+  "description": "Instant component previews on hover for HTML/React/Vue/Svelte in local dev.",
   "version": "0.0.1",
   "publisher": "RioEdwards",
-  "engines": {
-    "vscode": "^1.109.0"
-  },
-  "categories": [
-    "Programming Languages",
-    "Visualization"
-  ],
+  "author": "Rio Edwards <rioredwards@gmail.com>",
+  "homepage": "https://github.com/rioredwards/component-preview",
+  "icon": "images/ComponentPreview_Icon.png",
   "keywords": [
     "component-preview",
     "hover-preview",
+    "preview",
     "react",
     "tsx",
     "jsx",
     "vue",
     "svelte",
     "vite",
-    "developer-tools"
+    "developer-tools",
+    "rio",
+    "rio edwards",
+    "rioredwards"
   ],
-  "activationEvents": [
-    "onLanguage:html",
-    "onLanguage:typescriptreact",
-    "onLanguage:javascriptreact",
-    "onLanguage:vue",
-    "onLanguage:svelte"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "component-preview.openPluginSetup",
-        "title": "Component Preview: Open Vite Plugin Setup"
-      }
-    ],
-    "configuration": {
-      "title": "Component Preview",
-      "properties": {
-        "component-preview.devServerUrl": {
-          "type": "string",
-          "default": "",
-          "description": "Optional dev server URL override. Example: http://localhost:5173"
-        }
-      }
-    }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rioredwards/component-preview.git"
   },
+  "bugs": {
+    "url": "https://github.com/rioredwards/component-preview/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run package",
     "vscode:publish": "npx @vscode/vsce publish",
@@ -73,6 +61,32 @@
     "test:unit:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "inspect-fibers": "tsx scripts/inspect-fibers.ts"
+  },
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact",
+    "onLanguage:vue",
+    "onLanguage:svelte"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "component-preview.openPluginSetup",
+        "title": "Component Preview: Open Vite Plugin Setup"
+      }
+    ],
+    "configuration": {
+      "title": "Component Preview",
+      "properties": {
+        "component-preview.devServerUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional dev server URL override. Example: http://localhost:5173"
+        }
+      }
+    }
   },
   "dependencies": {
     "node-html-parser": "^7.0.2",

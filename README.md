@@ -9,12 +9,12 @@ The extension uses two rendering paths:
 
 ## Support Matrix
 
-| File type | Works without plugin | Works with `vite-plugin-component-preview` |
-| --- | --- | --- |
-| `.html` | Yes | Not needed |
-| `.tsx` / `.jsx` | Yes (React fiber fallback) | Yes (preferred) |
-| `.vue` | No | Yes |
-| `.svelte` | No | Yes |
+| File type       | Works without plugin       | Works with `vite-plugin-component-preview` |
+| --------------- | -------------------------- | ------------------------------------------ |
+| `.html`         | Yes                        | Not needed                                 |
+| `.tsx` / `.jsx` | Yes (React fiber fallback) | Yes (preferred)                            |
+| `.vue`          | No                         | Yes                                        |
+| `.svelte`       | No                         | Yes                                        |
 
 ## Install
 
@@ -49,6 +49,7 @@ export default defineConfig({
 ## Settings
 
 `component-preview.devServerUrl`
+
 - Optional URL override when auto detection does not find your dev server.
 - Example: `http://localhost:5173`
 

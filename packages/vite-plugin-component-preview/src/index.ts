@@ -31,6 +31,21 @@ function markerScript(markerGlobal: string): string {
   return `<script>window.${markerGlobal}=Object.assign(window.${markerGlobal}||{}, { version: "${PLUGIN_VERSION}" });</script>`;
 }
 
+function isVirtualFrameworkSubRequest(id: string): boolean {
+  const queryIndex = id.indexOf("?");
+  if (queryIndex === -1) {
+    return false;
+  }
+
+  const query = id.slice(queryIndex + 1);
+  if (!query) {
+    return false;
+  }
+
+  const params = new URLSearchParams(query);
+  return params.has("type") || params.has("svelte") || params.has("vue");
+}
+
 export default function componentPreview(
   options: ComponentPreviewPluginOptions = {},
 ): Plugin {
@@ -53,6 +68,10 @@ export default function componentPreview(
     },
     transform(code, id) {
       if (!config || config.command !== "serve") {
+        return null;
+      }
+
+      if (isVirtualFrameworkSubRequest(id)) {
         return null;
       }
 

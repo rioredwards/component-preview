@@ -1,6 +1,18 @@
 # Component Preview
 
+<p align="center">
+  <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Banner.jpg" alt="Component Preview banner" width="100%" />
+</p>
+
+<p align="center">
+  <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Icon.png" alt="Component Preview icon" width="96" height="96" />
+</p>
+
 Show rendered UI previews on hover inside VS Code.
+
+<p align="center">
+  <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Demo.gif" alt="Component Preview demo" width="100%" />
+</p>
 
 The extension uses two rendering paths:
 

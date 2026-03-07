@@ -3,6 +3,11 @@
 out/**
 node_modules/**
 src/**
+packages/**
+fixtures/**
+docs/**
+tmp/**
+.git/**
 .gitignore
 .yarnrc
 esbuild.js
@@ -12,3 +17,14 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Local/agent metadata
+.cursor/**
+.claude/**
+.agents/**
+skills/**
+.agent-context.json
+
+# Local assets not needed in marketplace package
+test-img-large.jpg
+test-img-small.jpg

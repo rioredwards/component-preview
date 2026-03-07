@@ -95,3 +95,10 @@ npm run fixture:hover:dev
 For one-key debug, press `F5` in this repo. It now auto-runs fixture setup and ensures
 `http://127.0.0.1:5173` is live before launching the Extension Development Host on
 `fixtures/hover-fixture-debug`.
+
+## Packaging & release
+
+- `npm run package:vsix` — build + create VSIX package
+- `npm run vscode:publish` — publish to VS Code Marketplace (requires `VSCE_PAT`)
+- `npm run open-vsx:publish` — publish to Open VSX (requires `OVSX_PAT`)
+- `npm run publish:all` — package + publish to both marketplaces (requires both PATs)

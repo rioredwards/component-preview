@@ -1,13 +1,26 @@
 {
   "name": "component-preview",
   "displayName": "component-preview",
-  "description": "View previews of your rendered html on hover",
+  "description": "Instant component previews on hover for HTML/TSX/JSX/Vue/Svelte in local dev.",
   "version": "0.0.1",
+  "publisher": "RioEdwards",
   "engines": {
     "vscode": "^1.109.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Visualization"
+  ],
+  "keywords": [
+    "component-preview",
+    "hover-preview",
+    "react",
+    "tsx",
+    "jsx",
+    "vue",
+    "svelte",
+    "vite",
+    "developer-tools"
   ],
   "activationEvents": [
     "onLanguage:html",
@@ -37,6 +50,10 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
+    "vscode:publish": "npx @vscode/vsce publish",
+    "package:vsix": "npm run package && npx @vscode/vsce package",
+    "open-vsx:publish": "node scripts/publish-marketplaces.mjs open-vsx",
+    "publish:all": "node scripts/publish-marketplaces.mjs all",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",

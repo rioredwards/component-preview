@@ -104,6 +104,25 @@ For one-key debug, press `F5` in this repo. It now auto-runs fixture setup and e
 - `npm run open-vsx:publish` — publish to Open VSX (requires `OVSX_PAT`)
 - `npm run publish:all` — package + publish to both marketplaces (requires both PATs)
 
+### Private repo-friendly image hosting
+
+Marketplace pages need publicly reachable HTTPS image URLs.
+
+Set these env vars before packaging/publish to rewrite README image/content links:
+
+- `VSCE_BASE_IMAGES_URL` (or `ASSET_BASE_URL`)
+- `VSCE_BASE_CONTENT_URL` (or `CONTENT_BASE_URL`)
+
+Example:
+
+```bash
+export VSCE_BASE_IMAGES_URL="https://assets.rioedwards.com/component-preview"
+export VSCE_BASE_CONTENT_URL="https://assets.rioedwards.com/component-preview"
+export VSCE_PAT="..."
+export OVSX_PAT="..."
+npm run publish:all
+```
+
 ## Requirements
 
 VS Code or Cursor.

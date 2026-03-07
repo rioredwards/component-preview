@@ -9,6 +9,7 @@ docs/**
 tmp/**
 scripts/**
 images/**
+!images/ComponentPreview_Icon.png
 .git/**
 .gitignore
 .npmrc
@@ -32,8 +33,6 @@ vitest.integration.config.ts
 AGENTS.md
 CLAUDE.md
 VISION.md
-CHANGELOG.md
-LICENSE
 
 # Local/agent metadata
 .cursor/**
@@ -43,6 +42,7 @@ skills/**
 .agent-context.json
 .learnings/**
 
-# Local assets not needed in marketplace package
-test-img-large.jpg
-test-img-small.jpg
+# Local env files
+.env
+.env.*
+

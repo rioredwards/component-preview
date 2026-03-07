@@ -51,12 +51,22 @@ export default defineConfig({
 });
 ```
 
-### 3) If detection misses your dev server
+### 3) If detection misses your dev server (important)
 
-Set `component-preview.devServerUrl`, for example:
+Set `component-preview.devServerUrl` in VS Code/Cursor settings.
 
-```txt
-http://localhost:5173
+How to set it:
+
+1. Open **Settings**
+2. Search for **component-preview.devServerUrl**
+3. Paste your dev URL (example: `http://localhost:5173`)
+
+Or add it directly in `settings.json`:
+
+```json
+{
+  "component-preview.devServerUrl": "http://localhost:5173"
+}
 ```
 
 ## Troubleshooting

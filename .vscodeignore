@@ -7,9 +7,15 @@ packages/**
 fixtures/**
 docs/**
 tmp/**
+scripts/**
+images/**
 .git/**
 .gitignore
+.npmrc
 .yarnrc
+.DS_Store
+.devcontainer/**
+.pnpm-store/**
 esbuild.js
 vsc-extension-quickstart.md
 **/tsconfig.json
@@ -17,6 +23,17 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+pnpm-lock.yaml
+pnpm-workspace.yaml
+vitest.config.ts
+vitest.integration.config.ts
+
+# Docs/meta not needed in extension
+AGENTS.md
+CLAUDE.md
+VISION.md
+CHANGELOG.md
+LICENSE
 
 # Local/agent metadata
 .cursor/**
@@ -24,6 +41,7 @@ vsc-extension-quickstart.md
 .agents/**
 skills/**
 .agent-context.json
+.learnings/**
 
 # Local assets not needed in marketplace package
 test-img-large.jpg

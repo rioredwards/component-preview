@@ -1,4 +1,4 @@
-# component-preview
+# Component Preview
 
 Show rendered UI previews on hover inside VS Code.
 
@@ -7,7 +7,7 @@ The extension uses two rendering paths:
 1. Static HTML path for `.html` files.
 2. Dev server path for framework files (`.tsx`, `.jsx`, `.vue`, `.svelte`).
 
-## Support Matrix
+## Supported languages
 
 | File type       | Works without plugin       | Works with `vite-plugin-component-preview` |
 | --------------- | -------------------------- | ------------------------------------------ |
@@ -103,3 +103,15 @@ For one-key debug, press `F5` in this repo. It now auto-runs fixture setup and e
 - `npm run vscode:publish` — publish to VS Code Marketplace (requires `VSCE_PAT`)
 - `npm run open-vsx:publish` — publish to Open VSX (requires `OVSX_PAT`)
 - `npm run publish:all` — package + publish to both marketplaces (requires both PATs)
+
+## Requirements
+
+VS Code or Cursor.
+
+## Feedback
+
+Feel free to reach out with any questions, feedback, or suggestions.
+
+## Authors
+
+Made with ❤️ by [Rio Edwards](https://www.linkedin.com/in/rio-edwards/)

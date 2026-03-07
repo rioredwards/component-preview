@@ -34,22 +34,43 @@ export function offsetToLineColumn(offset: number, lineStarts: number[]): { line
 export function findTagCloseOffset(source: string, startOffset: number): number {
   let inSingle = false;
   let inDouble = false;
+  let inBacktick = false;
+  let braceDepth = 0;
 
   for (let i = startOffset; i < source.length; i += 1) {
     const ch = source[i];
     const prev = i > 0 ? source[i - 1] : "";
 
-    if (ch === "'" && !inDouble && prev !== "\\") {
+    if (ch === "'" && !inDouble && !inBacktick && braceDepth === 0 && prev !== "\\") {
       inSingle = !inSingle;
       continue;
     }
 
-    if (ch === "\"" && !inSingle && prev !== "\\") {
+    if (ch === "\"" && !inSingle && !inBacktick && braceDepth === 0 && prev !== "\\") {
       inDouble = !inDouble;
       continue;
     }
 
-    if (ch === ">" && !inSingle && !inDouble) {
+    if (ch === "`" && !inSingle && !inDouble && prev !== "\\") {
+      inBacktick = !inBacktick;
+      continue;
+    }
+
+    if (inSingle || inDouble || inBacktick) {
+      continue;
+    }
+
+    if (ch === "{") {
+      braceDepth += 1;
+      continue;
+    }
+
+    if (ch === "}" && braceDepth > 0) {
+      braceDepth -= 1;
+      continue;
+    }
+
+    if (ch === ">" && braceDepth === 0) {
       return i;
     }
   }
@@ -94,8 +115,11 @@ export function injectPreviewAttributes(
       continue;
     }
 
+    // For self-closing tags (/>), insert before the slash
+    const insertPos = close > 0 && code[close - 1] === "/" ? close - 1 : close;
+
     s.appendLeft(
-      close,
+      insertPos,
       buildAttributeString(normalizedFilePath, point.line, point.column, point.loc),
     );
     modified = true;

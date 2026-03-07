@@ -105,6 +105,35 @@ You can submit an issue or feature request here:
 
 - https://github.com/rioredwards/component-preview/issues
 
+### Do I need to configure anything for React?
+
+Usually no. React (`.tsx`/`.jsx`) works out of the box in most projects.
+
+If preview is inconsistent, set `component-preview.devServerUrl` to your running app URL.
+
+### Does this work with Vue and Svelte?
+
+Yes, with the Vite plugin enabled.
+
+Install:
+
+```sh
+npm install -D vite-plugin-component-preview
+```
+
+Then add it to your Vite config and restart your dev server.
+
+### Which editor is supported?
+
+Component Preview is built for VS Code-compatible editors.
+
+- VS Code
+- Cursor
+
+### Is this stable for production use?
+
+It is usable, but still in early beta. Expect occasional rough edges while coverage and reliability improve.
+
 ## Requirements
 
 VS Code or Cursor.

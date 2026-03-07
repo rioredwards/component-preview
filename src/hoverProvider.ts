@@ -100,7 +100,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return this.buildNoServerHover();
     }
 
-    const outputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
+    let outputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
     let matchMetadata: DevServerMatchMetadata | null = null;
     try {
       matchMetadata = await renderFromDevServer({
@@ -122,6 +122,38 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return this.buildDevServerMismatchHover(devServerUrl, errorMessage);
     }
 
+    if (
+      matchMetadata &&
+      this.isComponentInvocationHover(document, position) &&
+      !this.isExactSourceMatch(matchMetadata, document.uri.fsPath, line, column)
+    ) {
+      const definitionTarget = await this.resolveDefinitionRenderTarget(
+        document,
+        position,
+        workspaceRoot,
+      );
+      if (definitionTarget) {
+        const definitionOutputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
+        try {
+          const definitionMatch = await renderFromDevServer({
+            devServerUrl,
+            workspaceRoot,
+            filePath: definitionTarget.filePath,
+            line: definitionTarget.line,
+            column: definitionTarget.column,
+            outputPath: definitionOutputPath,
+          });
+          await fs.unlink(outputPath).catch(() => undefined);
+          outputPath = definitionOutputPath;
+          matchMetadata = definitionMatch;
+        } catch (err) {
+          const errorMessage = this.getErrorMessage(err);
+          info("Definition fallback render failed.", errorMessage ?? "unknown error");
+          await fs.unlink(definitionOutputPath).catch(() => undefined);
+        }
+      }
+    }
+
     if (token.isCancellationRequested) {
       return null;
     }
@@ -135,6 +167,80 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
+  }
+
+  private isComponentInvocationHover(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): boolean {
+    const range = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$]*/);
+    if (!range) {
+      return false;
+    }
+    const symbol = document.getText(range);
+    if (!/^[A-Z]/.test(symbol)) {
+      return false;
+    }
+    const lineText = document.lineAt(position.line).text;
+    return new RegExp(`<\\s*${symbol}\\b`).test(lineText);
+  }
+
+  private isExactSourceMatch(
+    metadata: DevServerMatchMetadata,
+    requestFilePath: string,
+    requestLine: number,
+    requestColumn: number,
+  ): boolean {
+    if (metadata.source.line !== requestLine || metadata.source.column !== requestColumn) {
+      return false;
+    }
+
+    const sourceFile = metadata.source.file.replace(/\\/g, "/").toLowerCase();
+    const requestFile = requestFilePath.replace(/\\/g, "/").toLowerCase();
+    return requestFile === sourceFile || requestFile.endsWith(`/${sourceFile}`);
+  }
+
+  private async resolveDefinitionRenderTarget(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    workspaceRoot: string,
+  ): Promise<{ filePath: string; line: number; column: number } | null> {
+    const defs = (await vscode.commands.executeCommand(
+      "vscode.executeDefinitionProvider",
+      document.uri,
+      position,
+    )) as Array<vscode.Location | vscode.LocationLink> | undefined;
+
+    if (!defs || defs.length === 0) {
+      return null;
+    }
+
+    for (const def of defs) {
+      const uri = "targetUri" in def ? def.targetUri : def.uri;
+      const start = "targetRange" in def ? def.targetRange.start : def.range.start;
+      if (uri.scheme !== "file") {
+        continue;
+      }
+
+      const fsPath = uri.fsPath;
+      if (!/\.(tsx|jsx|vue|svelte)$/i.test(fsPath)) {
+        continue;
+      }
+      if (!fsPath.startsWith(workspaceRoot)) {
+        continue;
+      }
+      if (fsPath.includes("/node_modules/")) {
+        continue;
+      }
+
+      return {
+        filePath: fsPath,
+        line: start.line + 1,
+        column: start.character + 1,
+      };
+    }
+
+    return null;
   }
 
   private async provideHoverHtml(

@@ -331,3 +331,101 @@ Use a schema-valid pattern that includes `file`, `line` or `location`, and `mess
 - **Notes**: Updated matcher pattern to `file + line + column + message` with an inert fixture-only regex and kept existing background begin/end patterns.
 
 ---
+## [ERR-20260307-011] demo-hover-test-false-positive-match-on-shared-basename
+
+**Logged**: 2026-03-07T04:59:00Z
+**Priority**: high
+**Status**: pending
+**Area**: tests
+
+### Summary
+The diagnostic hover test can fail by rendering an image from an unrelated live app when the target file shares a basename like `App.tsx`.
+
+### Error
+```text
+AssertionError [ERR_ASSERTION]: Expected no-server or mismatch hover diagnostic, got:
+... image hover markdown with metadata source.file="src/App.tsx" ...
+```
+
+### Context
+- Command attempted: `npm run test:demo:hover`
+- A live server on `127.0.0.1:5173` was available.
+- The no-target test file was `/tmp/.../App.tsx`, but the hover resolved to fixture element metadata from `src/App.tsx`.
+- This indicates a basename-only false positive match in plugin adapter path matching.
+
+### Suggested Fix
+Tighten plugin adapter file matching to avoid suffix matches when request path is basename-only, and update the diagnostic test to avoid relying on ambient localhost state.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/vitePluginAdapter.ts, src/test/extension.test.ts
+- See Also: ERR-20260306-008
+
+---
+## [ERR-20260307-012] demo-hover-test-react-fiber-basename-fallback
+
+**Logged**: 2026-03-07T05:07:53Z
+**Priority**: high
+**Status**: resolved
+**Area**: tests
+
+### Summary
+`test:demo:hover` still failed after tightening Vite plugin matching because React fiber matching allowed basename-driven cross-app matches.
+
+### Error
+```text
+AssertionError [ERR_ASSERTION]: Expected no-server or mismatch hover diagnostic, got:
+... attachImage metadata adapter="react-fiber" source.file="src/App.tsx" ...
+```
+
+### Context
+- Command attempted: `npm run test:demo:hover`
+- Environment had another app live on 5173.
+- `reactFiberAdapter.fileMatches` accepted `src/App.tsx` for a request targeting temp `App.tsx`.
+
+### Suggested Fix
+Apply basename-only strict matching in React adapter, and prefer explicit relative or absolute path matches before any substring fallback.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/reactFiberAdapter.ts, src/test/extension.test.ts
+- See Also: ERR-20260307-011
+
+### Resolution
+- **Resolved**: 2026-03-07T05:07:53Z
+- **Commit/PR**: uncommitted
+- **Notes**: Added basename guard and absolute-path matching in React and Vite adapters, then reran `npm run test:demo:hover` successfully.
+
+---
+## [ERR-20260307-013] direct-vscode-test-binary-not-in-shell-path
+
+**Logged**: 2026-03-07T05:13:40Z
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+### Summary
+Running `vscode-test` directly from shell failed with exit code 127, while `npm run test` succeeded.
+
+### Error
+```text
+zsh:1: command not found: vscode-test
+```
+
+### Context
+- Command attempted: `npm run compile-tests && npm run compile && vscode-test --grep ...`
+- The project-local `vscode-test` binary is available through npm script PATH wiring.
+
+### Suggested Fix
+Run extension-host tests via npm scripts (`npm run test -- --grep ...`) instead of invoking `vscode-test` directly.
+
+### Metadata
+- Reproducible: yes
+- Related Files: package.json
+
+### Resolution
+- **Resolved**: 2026-03-07T05:13:40Z
+- **Commit/PR**: uncommitted
+- **Notes**: Reran with `npm run test -- --grep ...` and the targeted test passed.
+
+---

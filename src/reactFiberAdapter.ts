@@ -69,16 +69,22 @@ export class ReactFiberAdapter implements FrameworkAdapter {
     const relativePath = normalizeWorkspaceRelativePath(req.workspaceRoot, req.absoluteFilePath);
     const relativePathNormalized = normalizeForComparison(relativePath);
     const basenameNormalized = normalizeForComparison(basename);
+    const absolutePathNormalized = normalizeForComparison(req.absoluteFilePath);
+    const basenameOnly = !relativePathNormalized.includes("/");
 
     const handle = await page.evaluateHandle(
       ({
         targetLine,
         relativePathNormalized,
         basenameNormalized,
+        absolutePathNormalized,
+        basenameOnly,
       }: {
         targetLine: number;
         relativePathNormalized: string;
         basenameNormalized: string;
+        absolutePathNormalized: string;
+        basenameOnly: boolean;
       }) => {
         const roots: Array<Element> = [];
         const rootById = document.getElementById("root");
@@ -97,10 +103,21 @@ export class ReactFiberAdapter implements FrameworkAdapter {
 
         const fileMatches = (input: string): boolean => {
           const normalized = input.replace(/\\/g, "/").toLowerCase();
+          if (
+            normalized === relativePathNormalized ||
+            normalized === basenameNormalized ||
+            normalized === absolutePathNormalized
+          ) {
+            return true;
+          }
+          if (basenameOnly) {
+            return false;
+          }
           return (
             normalized.includes(relativePathNormalized) ||
             normalized.endsWith(`/${relativePathNormalized}`) ||
-            normalized.includes(`/${basenameNormalized}`)
+            normalized.includes(absolutePathNormalized) ||
+            normalized.endsWith(`/${absolutePathNormalized}`)
           );
         };
 
@@ -211,6 +228,8 @@ export class ReactFiberAdapter implements FrameworkAdapter {
         targetLine: req.line,
         relativePathNormalized,
         basenameNormalized,
+        absolutePathNormalized,
+        basenameOnly,
       },
     );
 

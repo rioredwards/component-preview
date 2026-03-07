@@ -11,17 +11,23 @@ const fixtureRoot = path.join(workspaceRoot, "fixtures", "hover-fixture-debug");
 
 const rootTypeScriptPkg = path.join(workspaceRoot, "node_modules", "typescript", "package.json");
 const fixtureVitePkg = path.join(fixtureRoot, "node_modules", "vite", "package.json");
+const FIXTURE_MARKERS = ['<title>hover-fixture</title>', 'src="/src/main.tsx"'];
 
 function isReadyOutput(text) {
   return /Local:\s+http:\/\/127\.0\.0\.1:5173\/?/i.test(text);
 }
 
-async function isServerAlive() {
+async function probeFixtureServer() {
   try {
     const response = await fetch(URL, { signal: AbortSignal.timeout(1000) });
-    return response.status < 500;
+    if (response.status >= 500) {
+      return { reachable: false, isFixture: false };
+    }
+    const body = await response.text();
+    const isFixture = FIXTURE_MARKERS.every((marker) => body.includes(marker));
+    return { reachable: true, isFixture };
   } catch {
-    return false;
+    return { reachable: false, isFixture: false };
   }
 }
 
@@ -109,10 +115,18 @@ async function runDevServerAndWaitReady() {
 }
 
 async function main() {
-  if (await isServerAlive()) {
+  const probe = await probeFixtureServer();
+
+  if (probe.isFixture) {
     console.log(`[fixture] Dev server already running at ${URL}`);
     console.log(`[fixture] Dev server ready at ${URL}`);
     return;
+  }
+
+  if (probe.reachable) {
+    throw new Error(
+      `[fixture] Port ${PORT} is serving a different app. Stop it or change the fixture port.`,
+    );
   }
 
   await ensureRootDependenciesInstalled();

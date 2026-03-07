@@ -105,14 +105,23 @@ function isHoverMatchMetadata(value: unknown): value is HoverMatchMetadata {
 }
 
 function readAttachCommandMetadata(markdown: string): HoverMatchMetadata | null {
-  const commandMatch = markdown.match(/command:component-preview\.attachImage\?([^)]+)/);
-  if (!commandMatch) {
+  const prefix = "command:component-preview.attachImage?";
+  const start = markdown.indexOf(prefix);
+  if (start < 0) {
     return null;
   }
 
+  const argsStart = start + prefix.length;
+  const argsTail = markdown.slice(argsStart);
+  const closingOffset = argsTail.search(/\)(?=\s|$)/);
+  if (closingOffset < 0) {
+    return null;
+  }
+  const encodedArgs = argsTail.slice(0, closingOffset);
+
   let decoded: string;
   try {
-    decoded = decodeURIComponent(commandMatch[1]);
+    decoded = decodeURIComponent(encodedArgs);
   } catch {
     return null;
   }
@@ -188,7 +197,7 @@ suite("Extension Test Suite", () => {
             "<!doctype html>",
             "<html><body>",
             "<script>window.__COMPONENT_PREVIEW_PLUGIN__={version:'0.1.0'};</script>",
-            '<div id="preview-target" class="fixture-card" data-cp-file="App.tsx" data-cp-line="2" data-cp-col="10" style="padding:20px;border:1px solid #ccc">hover target</div>',
+            '<div id="preview-target" class="fixture-card" data-cp-file="App.tsx" data-cp-line="2" data-cp-col="10" style="padding:20px;border:1px solid #ccc">hover target)</div>',
             "</body></html>",
           ].join(""),
         );
@@ -234,12 +243,106 @@ suite("Extension Test Suite", () => {
       assert.strictEqual(metadata.element.tag, "div");
       assert.strictEqual(metadata.element.id, "preview-target");
       assert.strictEqual(metadata.element.className, "fixture-card");
+      assert.strictEqual(metadata.element.text, "hover target)");
       assert.strictEqual(metadata.source.file, "App.tsx");
       assert.strictEqual(metadata.source.line, 2);
       assert.strictEqual(metadata.source.column, 10);
       assert.strictEqual(metadata.source.origin, "data-cp");
     } finally {
       const config = vscode.workspace.getConfiguration("component-preview", vscode.Uri.file(filePath));
+      await config.update("devServerUrl", "", vscode.ConfigurationTarget.Global);
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  test("resolves component invocation hover to the component definition source", async function () {
+    this.timeout(30_000);
+
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cp-hover-component-def-"));
+    const appPath = await writeFixtureFile(
+      tmp,
+      "App.tsx",
+      [
+        "import { HeroSection } from './components/HeroSection';",
+        "import { MetricsGrid } from './components/MetricsGrid';",
+        "",
+        "export function App() {",
+        "  return (",
+        "    <main>",
+        "      <HeroSection />",
+        "      <MetricsGrid />",
+        "    </main>",
+        "  );",
+        "}",
+      ].join("\n"),
+    );
+    await writeFixtureFile(
+      tmp,
+      "components/HeroSection.tsx",
+      [
+        "export function HeroSection() {",
+        "  return <section>hero section</section>;",
+        "}",
+      ].join("\n"),
+    );
+    await writeFixtureFile(
+      tmp,
+      "components/MetricsGrid.tsx",
+      [
+        "export function MetricsGrid() {",
+        "  return <section>metrics grid</section>;",
+        "}",
+      ].join("\n"),
+    );
+
+    const server = http.createServer((req, res) => {
+      if (!req.url || req.url === "/") {
+        res.writeHead(200, { "content-type": "text/html" });
+        res.end(
+          [
+            "<!doctype html>",
+            "<html><body>",
+            "<script>window.__COMPONENT_PREVIEW_PLUGIN__={version:'0.1.0'};</script>",
+            '<main data-cp-file="App.tsx" data-cp-line="6" data-cp-col="5">app shell</main>',
+            '<section id="hero-target" data-cp-file="components/HeroSection.tsx" data-cp-line="2" data-cp-col="10">hero section</section>',
+            '<section id="metrics-target" data-cp-file="components/MetricsGrid.tsx" data-cp-line="2" data-cp-col="10">metrics grid</section>',
+            "</body></html>",
+          ].join(""),
+        );
+        return;
+      }
+      if (req.url.startsWith("/react_jsx-dev-runtime.js")) {
+        res.writeHead(200, { "content-type": "application/javascript" });
+        res.end("export {};");
+        return;
+      }
+      res.writeHead(404);
+      res.end("not found");
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+
+    try {
+      const address = server.address();
+      assert.ok(address && typeof address === "object");
+      const url = `http://127.0.0.1:${address.port}`;
+      const config = vscode.workspace.getConfiguration("component-preview", vscode.Uri.file(appPath));
+      await config.update("devServerUrl", url, vscode.ConfigurationTarget.Global);
+
+      const hovers = await openFileAndHover(appPath, new vscode.Position(6, 10));
+      const text = hovers.map(hoverToString).join("\n\n");
+      const metadata = readAttachCommandMetadata(text);
+
+      assert.ok(metadata, `Expected hover command metadata, got:\n${text}`);
+      assert.strictEqual(metadata.source.file, "components/HeroSection.tsx");
+      assert.strictEqual(metadata.element.id, "hero-target");
+      assert.strictEqual(metadata.source.line, 2);
+      assert.strictEqual(metadata.source.origin, "data-cp");
+    } finally {
+      const config = vscode.workspace.getConfiguration("component-preview", vscode.Uri.file(appPath));
       await config.update("devServerUrl", "", vscode.ConfigurationTarget.Global);
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

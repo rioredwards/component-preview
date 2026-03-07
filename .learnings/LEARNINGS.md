@@ -205,3 +205,26 @@ Do not make default `F5` depend on npm prelaunch tasks unless `PATH` handling is
 - Pattern-Key: harden.vscode-gui-path-vs-shell-path
 
 ---
+## [LRN-20260307-010] best_practice
+
+**Logged**: 2026-03-07T05:14:16Z
+**Priority**: high
+**Status**: pending
+**Area**: tests
+
+### Summary
+For JSX component invocation hovers (`<MyComponent />`), fallback to definition location when callsite source metadata does not exactly match.
+
+### Details
+The Vite plugin annotates host DOM tags, not component invocation tags. Hovering `App.tsx` lines with self-closing component usage can map to the same nearest host element (for example `<main>`), producing identical previews across multiple component hovers. Using `vscode.executeDefinitionProvider` for uppercase JSX symbols and re-rendering with the definition file/line produces component-specific previews.
+
+### Suggested Action
+Keep the definition fallback path for uppercase JSX invocation hovers when source metadata line/column does not exactly match the request. Preserve existing behavior for direct host-element hovers.
+
+### Metadata
+- Source: simplify-and-harden
+- Related Files: src/hoverProvider.ts, src/test/extension.test.ts
+- Tags: hover, jsx, definitions, fallback
+- Pattern-Key: harden.jsx-component-hover-definition-fallback
+
+---

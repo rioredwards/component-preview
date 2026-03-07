@@ -77,22 +77,34 @@ export class VitePluginAdapter implements FrameworkAdapter {
   async findElement(page: Page, req: FindElementRequest): Promise<ElementHandle<Element> | null> {
     const relativePath = normalizeWorkspaceRelativePath(req.workspaceRoot, req.absoluteFilePath);
     const relativePathNormalized = normalizeForComparison(relativePath);
+    const absolutePathNormalized = normalizeForComparison(req.absoluteFilePath);
+    const basenameOnly = !relativePathNormalized.includes("/");
 
     const handle = await page.evaluateHandle(
       ({
         relativePathNormalized,
+        absolutePathNormalized,
+        basenameOnly,
         targetLine,
         targetColumn,
       }: {
         relativePathNormalized: string;
+        absolutePathNormalized: string;
+        basenameOnly: boolean;
         targetLine: number;
         targetColumn: number;
       }) => {
         const matchFile = (candidatePath: string): boolean => {
           const normalized = candidatePath.replace(/\\/g, "/").toLowerCase();
+          if (normalized === relativePathNormalized || normalized === absolutePathNormalized) {
+            return true;
+          }
+          if (basenameOnly) {
+            return false;
+          }
           return (
-            normalized === relativePathNormalized ||
-            normalized.endsWith(`/${relativePathNormalized}`)
+            normalized.endsWith(`/${relativePathNormalized}`) ||
+            normalized.endsWith(`/${absolutePathNormalized}`)
           );
         };
 
@@ -153,6 +165,8 @@ export class VitePluginAdapter implements FrameworkAdapter {
       },
       {
         relativePathNormalized,
+        absolutePathNormalized,
+        basenameOnly,
         targetLine: req.line,
         targetColumn: req.column,
       },

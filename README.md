@@ -87,31 +87,23 @@ Or add it directly in `settings.json`:
 - Save and hover again.
 - Confirm the component is currently rendered in your running app.
 
-## Packaging & release
+## FAQ
 
-- `npm run package:vsix` — build + create VSIX package
-- `npm run vscode:publish` — publish to VS Code Marketplace (requires `VSCE_PAT`)
-- `npm run open-vsx:publish` — publish to Open VSX (requires `OVSX_PAT`)
-- `npm run publish:all` — package + publish to both marketplaces (requires both PATs)
+### Why isn’t it working?
 
-### Private repo-friendly image hosting
+Here are some troubleshooting tips:
 
-Marketplace pages need publicly reachable HTTPS image URLs.
+- Make sure your dev server is running.
+- Set `component-preview.devServerUrl` if auto-detection misses your URL or port.
+- For Vue or Svelte, install and enable `vite-plugin-component-preview`.
+- Restart your dev server after plugin or config changes.
+- Reload the editor window after installing or updating the extension.
 
-Set these env vars before packaging/publish to rewrite README image/content links:
+**Note:** This app is still in early beta and being actively developed, so expect some rough edges. These will be smoothed out over time.
 
-- `VSCE_BASE_IMAGES_URL` (or `ASSET_BASE_URL`)
-- `VSCE_BASE_CONTENT_URL` (or `CONTENT_BASE_URL`)
+You can submit an issue or feature request here:
 
-Example:
-
-```bash
-export VSCE_BASE_IMAGES_URL="https://assets.rioedwards.com/component-preview"
-export VSCE_BASE_CONTENT_URL="https://assets.rioedwards.com/component-preview"
-export VSCE_PAT="..."
-export OVSX_PAT="..."
-npm run publish:all
-```
+- https://github.com/rioredwards/component-preview/issues
 
 ## Requirements
 

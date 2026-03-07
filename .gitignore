@@ -7,3 +7,4 @@ node_modules
 # Root-level screenshots
 CleanShot*
 tmp
+.env

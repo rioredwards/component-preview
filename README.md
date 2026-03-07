@@ -87,23 +87,9 @@ Or add it directly in `settings.json`:
 - Save and hover again.
 - Confirm the component is currently rendered in your running app.
 
+**Note:** This app is still in early beta and being actively developed, so expect some rough edges. These will be smoothed out over time. You can submit an issue or feature request here: <TODO: Add issue tracker link>
+
 ## FAQ
-
-### Why isn’t it working?
-
-Here are some troubleshooting tips:
-
-- Make sure your dev server is running.
-- Set `component-preview.devServerUrl` if auto-detection misses your URL or port.
-- For Vue or Svelte, install and enable `vite-plugin-component-preview`.
-- Restart your dev server after plugin or config changes.
-- Reload the editor window after installing or updating the extension.
-
-**Note:** This app is still in early beta and being actively developed, so expect some rough edges. These will be smoothed out over time.
-
-You can submit an issue or feature request here:
-
-- https://github.com/rioredwards/component-preview/issues
 
 ### Do I need to configure anything for React?
 

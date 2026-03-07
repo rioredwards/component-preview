@@ -61,6 +61,36 @@ Flat, priority-ordered ticket list.
   - Notes:
     - Reported during manual smoke tests as "no hover shown" in a Vite Svelte JS fixture.
 
+- [P2] UX polish: onboarding toast for missing plugin/framework support
+  - Acceptance criteria:
+    - Show a clear, low-noise onboarding toast when plugin-required frameworks are detected without setup.
+    - Toast includes direct action(s): open setup docs / open plugin page.
+    - Avoid repeat spam via dismissal TTL or session-level suppression.
+  - Dependencies:
+    - Reuse existing plugin onboarding notification paths.
+  - Notes:
+    - Requested as part of beta UX polish checklist.
+
+- [P2] UX polish: improve dev server error copy
+  - Acceptance criteria:
+    - Error hovers/notifications explain likely causes in plain language (wrong app URL, server down, plugin missing, route mismatch).
+    - Include concrete next actions and command/settings hints.
+    - Keep copy concise and readable in hover window.
+  - Dependencies:
+    - None.
+  - Notes:
+    - Requested as part of beta UX polish checklist.
+
+- [P2] UX polish: add "Component Preview: Diagnose Setup" command
+  - Acceptance criteria:
+    - New command runs a lightweight local diagnosis (workspace file type, detected dev server, configured override, plugin marker presence when applicable).
+    - Returns actionable summary with pass/fail checks and next steps.
+    - Can be linked from error hovers/notifications.
+  - Dependencies:
+    - May reuse existing detection logic (`detectDevServer`, plugin marker checks).
+  - Notes:
+    - Requested as part of beta UX polish checklist.
+
 - [P1] Fallback hover on composite React components should capture full rendered output (not first host child)
   - Acceptance criteria:
     - Hovering component declarations/usages for fragment-returning components captures the full component output (or a clearly better container) rather than a single child node (e.g., logo image block).

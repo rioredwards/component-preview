@@ -1,7 +1,26 @@
 {
   "name": "vite-plugin-component-preview",
   "version": "0.1.0",
-  "description": "Inject component preview source metadata into Vite framework output.",
+  "description": "This plugin enables the Component Preview VS Code extension to work with Vue and Svelte..",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rioredwards/component-preview.git",
+    "directory": "packages/vite-plugin-component-preview"
+  },
+  "homepage": "https://github.com/rioredwards/component-preview/tree/main/packages/vite-plugin-component-preview",
+  "bugs": {
+    "url": "https://github.com/rioredwards/component-preview/issues"
+  },
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "component-preview",
+    "vscode",
+    "react",
+    "vue",
+    "svelte"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -104,7 +104,9 @@ export class VitePluginAdapter implements FrameworkAdapter {
           }
           return (
             normalized.endsWith(`/${relativePathNormalized}`) ||
-            normalized.endsWith(`/${absolutePathNormalized}`)
+            normalized.endsWith(`/${absolutePathNormalized}`) ||
+            relativePathNormalized.endsWith(`/${normalized}`) ||
+            absolutePathNormalized.endsWith(`/${normalized}`)
           );
         };
 

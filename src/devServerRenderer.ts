@@ -98,6 +98,7 @@ async function pickAdapter(
   }
 
   if (detected.length === 0) {
+    await invalidateDevPage();
     if (fileIsPluginOnly(opts.filePath)) {
       throw new MissingVitePluginError(
         "vite-plugin-component-preview is required for Vue/Svelte hover previews.",
@@ -196,6 +197,14 @@ function coalesceSourceLocation(
   };
 }
 
+async function invalidateDevPage(): Promise<void> {
+  if (devPage) {
+    await devPage.close().catch(() => undefined);
+    devPage = null;
+    devPageUrl = null;
+  }
+}
+
 export async function renderFromDevServer(
   opts: DevServerRenderOptions,
 ): Promise<DevServerMatchMetadata> {
@@ -205,6 +214,7 @@ export async function renderFromDevServer(
   const matched = await findElementWithFallbacks(page, opts, selected, detected);
 
   if (!matched) {
+    await invalidateDevPage();
     throw new Error(
       `No element found for ${opts.filePath}:${opts.line}:${opts.column} ` +
         `using adapters [${detected.map((a) => a.name).join(", ")}].`,

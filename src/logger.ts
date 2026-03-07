@@ -1,6 +1,8 @@
 import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
-const LOG_FILE = "/tmp/component-preview-debug.log";
+const LOG_FILE = path.join(os.tmpdir(), "component-preview-debug.log");
 
 // Lazy-loaded VS Code Output channel. Set by initLogger() at activation time.
 // When running in unit tests, this stays null and logging goes to file only.

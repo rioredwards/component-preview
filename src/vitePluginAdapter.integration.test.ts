@@ -34,7 +34,7 @@ describe("VitePluginAdapter integration", () => {
     await page.setContent(`
       <html>
         <body>
-          <script>window.__COMPONENT_PREVIEW_PLUGIN__ = { version: "0.1.0" };</script>
+          <script>window.__COMPONENT_PREVIEW_PLUGIN__ = {};</script>
           <div id="target" data-cp-file="src/App.vue" data-cp-line="12" data-cp-col="5" data-cp-loc="220">x</div>
         </body>
       </html>

@@ -4,7 +4,11 @@ import * as os from "os";
 import * as path from "path";
 import { Browser, BrowserContext, chromium } from "playwright";
 import { captureAdaptiveJpeg, settlePageForCapture } from "./screenshotPipeline";
-import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "./screenshotConstants";
+import {
+  MAX_CAPTURE_WIDTH,
+  VIEWPORT_HEIGHT,
+  VIEWPORT_WIDTH,
+} from "./screenshotConstants";
 
 export interface RenderOptions {
   html: string;
@@ -61,7 +65,7 @@ export async function renderElement(opts: RenderOptions): Promise<void> {
 export async function compressImageFile(inputPath: string, outputPath: string): Promise<void> {
   const html =
     `<!DOCTYPE html><html><body style="margin:0;padding:0">` +
-    `<img src="file://${inputPath}" style="max-width:800px;display:block">` +
+    `<img src="file://${inputPath}" style="max-width:${MAX_CAPTURE_WIDTH}px;display:block">` +
     `</body></html>`;
 
   const tmpFile = path.join(os.tmpdir(), `compress-${randomUUID()}.html`);

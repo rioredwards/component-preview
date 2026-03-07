@@ -5,7 +5,6 @@ import { transformSvelte } from "./transformSvelte.js";
 import { transformVue } from "./transformVue.js";
 
 const DEFAULT_MARKER_GLOBAL = "__COMPONENT_PREVIEW_PLUGIN__";
-const PLUGIN_VERSION = "0.1.0";
 
 export interface ComponentPreviewPluginOptions {
   include?: RegExp[];
@@ -13,11 +12,7 @@ export interface ComponentPreviewPluginOptions {
   markerGlobal?: string;
 }
 
-function shouldProcessFile(
-  file: string,
-  include: RegExp[],
-  exclude: RegExp[],
-): boolean {
+function shouldProcessFile(file: string, include: RegExp[], exclude: RegExp[]): boolean {
   if (exclude.some((p) => p.test(file))) {
     return false;
   }
@@ -28,7 +23,7 @@ function shouldProcessFile(
 }
 
 function markerScript(markerGlobal: string): string {
-  return `<script>window.${markerGlobal}=Object.assign(window.${markerGlobal}||{}, { version: "${PLUGIN_VERSION}" });</script>`;
+  return `<script>window.${markerGlobal}=window.${markerGlobal}||{};</script>`;
 }
 
 function isVirtualFrameworkSubRequest(id: string): boolean {
@@ -46,9 +41,7 @@ function isVirtualFrameworkSubRequest(id: string): boolean {
   return params.has("type") || params.has("svelte") || params.has("vue");
 }
 
-export default function componentPreview(
-  options: ComponentPreviewPluginOptions = {},
-): Plugin {
+export default function componentPreview(options: ComponentPreviewPluginOptions = {}): Plugin {
   let config: ResolvedConfig | null = null;
   const include = options.include ?? [];
   const exclude = options.exclude ?? [];

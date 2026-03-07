@@ -27,7 +27,7 @@ import { JSX_DEV_RUNTIME_PATCH } from "../src/jsxDevPatch";
 import { MAX_BYTES, QUALITY_STEPS } from "../src/screenshotConstants";
 
 const DEFAULT_DEV_SERVER = "http://localhost:5173";
-const DEFAULT_TARGET_FILE = "/home/node/react-app/src/App.jsx";
+const DEFAULT_TARGET_FILE = path.join(process.cwd(), "src/App.jsx");
 const DEFAULT_TARGET_LINE = 11;
 
 interface FiberDumpEntry {

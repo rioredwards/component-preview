@@ -196,7 +196,7 @@ suite("Extension Test Suite", () => {
           [
             "<!doctype html>",
             "<html><body>",
-            "<script>window.__COMPONENT_PREVIEW_PLUGIN__={version:'0.1.0'};</script>",
+            "<script>window.__COMPONENT_PREVIEW_PLUGIN__={};</script>",
             '<div id="preview-target" class="fixture-card" data-cp-file="App.tsx" data-cp-line="2" data-cp-col="10" style="padding:20px;border:1px solid #ccc">hover target)</div>',
             "</body></html>",
           ].join(""),
@@ -302,7 +302,7 @@ suite("Extension Test Suite", () => {
           [
             "<!doctype html>",
             "<html><body>",
-            "<script>window.__COMPONENT_PREVIEW_PLUGIN__={version:'0.1.0'};</script>",
+            "<script>window.__COMPONENT_PREVIEW_PLUGIN__={};</script>",
             '<main data-cp-file="App.tsx" data-cp-line="6" data-cp-col="5">app shell</main>',
             '<section id="hero-target" data-cp-file="components/HeroSection.tsx" data-cp-line="2" data-cp-col="10">hero section</section>',
             '<section id="metrics-target" data-cp-file="components/MetricsGrid.tsx" data-cp-line="2" data-cp-col="10">metrics grid</section>',

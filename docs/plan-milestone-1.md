@@ -1,5 +1,9 @@
 Plan: HTML Element Preview on Hover
 
+> **Historical plan** — Implementation has diverged. The extension now uses base64 JPEG data URIs (no image server), different cache keys (`uri\x00elementId` for HTML), and no `imageServer.ts`. See `CLAUDE.md` for current architecture.
+
+---
+
 Context
 
 Build a VS Code hover provider that, when the user hovers over an HTML element in a .html file, renders that

@@ -20,6 +20,7 @@
  */
 
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { chromium } from "playwright";
 import { scoreFiber } from "../src/fiberScoring";
@@ -402,7 +403,7 @@ function parseCliArgs(args: string[]): CliParseResult {
   // -- Screenshot the selected element (same as extension) --
   console.log(`\n-> Screenshotting <${result.winner.domTag}> (line=${result.winner.srcLine})`);
 
-  const outPath = `/tmp/inspect-fibers-${targetLine}.jpeg`;
+  const outPath = path.join(os.tmpdir(), `inspect-fibers-${targetLine}.jpeg`);
   const elementHandle = await page.evaluateHandle(
     ({ basename, targetLine }: { basename: string; targetLine: number }) => {
       const rootEl = document.getElementById("root") ?? document.body;

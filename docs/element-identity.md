@@ -6,13 +6,11 @@ This is the core unsolved problem for durable image attachment (free tier) and s
 
 ---
 
-## The Current Problem
+## The Current Implementation
 
-Our cache key is `uri|version|offset`.
+**Static HTML:** Cache key is `uri\x00elementId`. `elementId` priority: `id` attr → `data-testid` → `data-component` → CSS structural path (e.g. `html > body > main > h1:nth-of-type(2)`). See `src/htmlAnnotator.ts`.
 
-- `version` increments on every keystroke → cache misses constantly
-- `offset` (cursor position) shifts whenever anything above it is edited
-- Result: manually attached images orphan themselves the moment the user types
+**React/framework:** Cache key is `uri\x00line:col` (1-based). Source lines come from `data-src-line` (injected via jsxDEV route intercept) — React 19 dropped `_debugSource`. See `docs/react-fiber-internals.md`.
 
 ---
 
@@ -28,15 +26,12 @@ root to the hovered element.
 
 **Best for:** plain HTML, stable cache keys, free-tier image attachment.
 
-### 2. Use React's built-in source location (`_debugSource`)
-In dev mode, React attaches `_debugSource: { fileName, lineNumber, columnNumber }` to
-every fiber node. React DevTools reads this to show "source: hero.tsx:81" in the panel.
+### 2. Use source location from Babel/jsxDEV (current approach)
+React 19 dropped `_debugSource`. We recover source lines by intercepting `react_jsx-dev-runtime.js`
+and wrapping `jsxDEV` to inject `data-src-line` on host elements. This gives us `fileName:line:col`
+as a durable identity — the same coordinates the cursor is on in VS Code.
 
-This gives us `fileName:line:col` as a durable identity — the same coordinates the cursor
-is already on in VS Code.
-
-**Best for:** Milestone 5 (React/JSX). Inject a script in the Playwright page to walk the
-fiber tree from the hovered DOM node up to its React component, then read `_debugSource`.
+**Best for:** React/JSX. See `docs/react-fiber-internals.md` for implementation details.
 
 ### 3. Use existing stable attributes
 If the element already has `id`, `data-testid`, `data-component`, or similar, just use
@@ -47,25 +42,20 @@ and survive refactors.
 
 ---
 
-## Recommended Identity Strategy (by milestone)
+## Identity Strategy (current)
 
-| Milestone | File type | Identity key |
-|---|---|---|
-| 1 (now) | Plain HTML | XPath from root (structural path) |
-| 2–3 | HTML + CSS | Same XPath |
-| 4 | HTML + JS | XPath, fall back to `id`/`data-testid` |
-| 5 | JSX/React | `_debugSource` fileName:line:col from fiber |
-| 5 | Vue/Svelte | TBD — similar compiler debug info may exist |
+| File type | Identity key |
+|---|---|
+| Plain HTML | `elementId`: `id` → `data-testid` → `data-component` → CSS structural path |
+| React/JSX | `line:col` from `data-src-line` (jsxDEV intercept) |
+| Vue/Svelte | `data-cp-file` + `data-cp-line` + `data-cp-col` (vite-plugin injects) |
 
 ---
 
 ## Implementation Notes
 
-- **XPath generation:** walk the parsed tree from root → target, tracking tag name and
-  sibling index at each level. Exclude `data-hover-id` (we inject that ourselves).
-- **Fiber introspection:** inject a `<script>` into the Playwright page that does
-  `element.__reactFiber$xxx._debugSource` — the property name has a hash suffix, so
-  find it with `Object.keys(el).find(k => k.startsWith('__reactFiber'))`.
+- **Static HTML:** `src/htmlAnnotator.ts` walks the parsed tree, computes `elementId`, injects `data-hover-id`.
+- **React:** `data-src-line` is read from `fiber.memoizedProps` / `fiber.pendingProps` (injected by jsxDEV patch).
 - **Sidecar file:** once identity is stable, store manual attachments in
   `.component-previews.json` keyed on the identity string. This file can be committed
   to git so teammates see the same previews.

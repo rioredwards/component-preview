@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Root | `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `VISION.md` — files tools or conventions expect at the top level |
 | `docs/` | Everything else: research notes, architecture decisions, debugging guides, milestone plans |
 
-Current docs: `docs/element-identity.md`, `docs/devcontainer-debugging.md`, `docs/plan-milestone-1.md`, `docs/plan-element-identity.md`, `docs/plan-milestone-2.md`, `docs/architecture-rendering-strategy.md`, `docs/react-fiber-internals.md`
+Key docs: `docs/element-identity.md`, `docs/devcontainer-debugging.md`, `docs/plan-milestone-1.md`, `docs/plan-element-identity.md`, `docs/plan-milestone-2.md`, `docs/architecture-rendering-strategy.md`, `docs/react-fiber-internals.md`, `docs/smoke-test-log.md`, `docs/framework-support-strategy.md`
 
 ## What This Extension Does
 
@@ -41,7 +41,7 @@ Press **F5** in VS Code to launch an Extension Development Host for manual testi
 | `src/renderer.ts` | Playwright singleton browser — lazy-init, delegates to `screenshotPipeline` for adaptive JPEG capture |
 | `src/screenshotConstants.ts` | Shared constants: `MAX_BYTES`, `QUALITY_STEPS`, `MAX_CAPTURE_WIDTH/HEIGHT` |
 | `src/screenshotPipeline.ts` | `captureAdaptiveJpeg()` — quality-stepping loop + resize fallback, used by both render paths |
-| `src/devServerDetector.ts` | Scans common ports (3000, 5173, 8080, …) to find a running Vite/CRA dev server; 30s cache TTL with liveness check |
+| `src/devServerDetector.ts` | Scans common ports (5173, 3000, 4173, 8080, 8000) to find a running Vite/CRA dev server; 30s cache TTL with liveness check |
 | `src/devServerRenderer.ts` | React path: walks fiber tree, scores candidates, screenshots DOM node |
 | `src/jsxDevPatch.ts` | `JSX_DEV_RUNTIME_PATCH` — IIFE that wraps `jsxDEV` to inject `data-src-line` prop |
 | `src/fiberScoring.ts` | `scoreFiber()` — canonical scoring function (browser-side keeps inline copy) |
@@ -77,4 +77,4 @@ Press **F5** in VS Code to launch an Extension Development Host for manual testi
 - `globalStorageUri/previews/` is ephemeral (wiped on deactivate); `globalStorageUri/attached/` is permanent user data — never delete it
 - React 19 dropped `_debugSource`; source lines come from our `jsxDEV` route intercept (`data-src-line` prop) — see `docs/react-fiber-internals.md`
 - `__reactContainer$<key>` always holds the **stale** initial HostRoot fiber; live tree is at `stale.stateNode.current`
-- Log file for React path diagnostics: `/tmp/component-preview-debug.log`
+- Log file for React path diagnostics: `<os.tmpdir()>/component-preview-debug.log` (platform-specific)

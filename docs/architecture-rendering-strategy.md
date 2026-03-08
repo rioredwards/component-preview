@@ -44,7 +44,7 @@ essentially always true while actively developing a frontend app.
 **Flow:**
 ```
 hover → detect dev server URL → Playwright navigates to server root →
-inject fiber scan script → find element by _debugSource → screenshot DOM node
+inject fiber scan script → find element by data-src-line (jsxDEV intercept) → screenshot DOM node
 ```
 
 No temp files. No inlining. No compilation. The dev server has already done all of that.
@@ -86,10 +86,10 @@ The highest-scoring candidate's DOM element is screenshotted via Playwright elem
 
 In order of preference:
 1. Read `VITE_PORT` / `PORT` from `.env` / `.env.local`
-2. Check `vite.config.ts` / `vite.config.js` for `server.port`
-3. Check `next.config.js` for custom port
-4. Scan common ports: 3000, 5173, 4173, 8080, 8000
-5. Fall back to a VS Code setting: `component-preview.devServerUrl`
+2. Check `vite.config.ts` / `vite.config.js` for `port`
+3. Check `package.json` for Vite scripts/deps → default 5173
+4. Scan common ports: 5173, 3000, 4173, 8080, 8000 (when no workspace root)
+5. Fall back to VS Code setting: `component-preview.devServerUrl`
 
 ---
 

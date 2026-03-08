@@ -35,7 +35,7 @@ componentPreview(),
 Example:
 
 ```ts
-// 🚨 DO BLINDLY COPY/PASTE THIS EXAMPLE. YOUR CONFIG MAY DIFFER!
+// 🚨 DON'T blindly copy/paste — your config may differ!
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import componentPreview from "vite-plugin-component-preview"; // 👈 add this

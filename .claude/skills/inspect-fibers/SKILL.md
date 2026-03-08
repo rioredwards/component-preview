@@ -5,11 +5,13 @@ argument-hint: [line-number]
 allowed-tools: Bash
 ---
 
-Run the fiber inspector for line $ARGUMENTS and analyse the results:
+Run the fiber inspector for line $ARGUMENTS and analyse the results. From the project root:
 
 ```
-!`cd /workspaces/component-preview && pnpm run inspect-fibers $ARGUMENTS 2>&1`
+!`pnpm run inspect-fibers $ARGUMENTS 2>&1`
 ```
+
+(If in a DevContainer, you may need `cd /workspaces/component-preview &&` first.)
 
 Based on the output above:
 
@@ -19,4 +21,4 @@ Based on the output above:
 
 3. **Flag any scoring problems** — if the wrong element was chosen (e.g. a tiny `<span>` instead of the surrounding `<section>`), explain why the scoring picked it and suggest a fix to `scoreFiber()` in `devServerRenderer.ts`.
 
-4. **Note the screenshot** — confirm it was saved to `/tmp/inspect-fibers-$ARGUMENTS.jpeg` and the reported `size` and `box` dimensions look reasonable (height > 0, not a 1×1 pixel ghost element).
+4. **Note the screenshot** — confirm it was saved to `<os.tmpdir()>/inspect-fibers-<line>.jpeg` and the reported `size` and `box` dimensions look reasonable (height > 0, not a 1×1 pixel ghost element).

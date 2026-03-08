@@ -118,7 +118,7 @@ Deprioritized until M3 and M4 are proven.
 ### Correctness & Reliability First
 
 - Handle errors explicitly. Never swallow exceptions silently.
-- Validate all external input with **Zod** (file content, config files, API responses).
+- Validate external input at system boundaries (file content, config files, API responses). Zod recommended when schema validation is added.
 - Write defensive code at system boundaries; trust internal contracts.
 - Edge cases are not afterthoughts — enumerate them before implementation.
 
@@ -157,7 +157,7 @@ Deprioritized until M3 and M4 are proven.
 
 - Never execute arbitrary code from the document without sandboxing.
 - Sanitize all file paths to prevent traversal attacks.
-- The image server (if ever re-enabled) must only serve from `previewDir`.
+- Any future HTTP image server must only serve from `previewDir`. (Current implementation uses base64 data URIs only.)
 - No telemetry or data collection without explicit user consent.
 
 ---
@@ -183,7 +183,7 @@ Deprioritized until M3 and M4 are proven.
 
 - Work is tracked in `BACKLOG.md` as a flat bullet list, ordered by priority.
 - Each ticket has: a short title, acceptance criteria, and any known dependencies.
-- Move tickets to `plan.md` (the active sprint) when ready to work on them.
+- Move tickets to `BACKLOG.md` (or an active sprint doc) when ready to work on them.
 - Close tickets with the commit that ships them (reference the ticket in the commit message).
 
 ### Commit Style
@@ -198,17 +198,16 @@ Deprioritized until M3 and M4 are proven.
 - AI is a collaborator, not an autocomplete. Use it for design, review, and generation.
 - Always review AI-generated code before committing. Understand what it does.
 - Keep `CLAUDE.md` and `VISION.md` up to date — they are the AI's long-term memory.
-- Use `plan.md` as the active working document for the current milestone.
+- Use `BACKLOG.md` as the active working document for prioritized work.
 - When a session produces durable learnings, update `CLAUDE.md` or create a topic file
   in `.claude/memory/`.
 
 ### Observability
 
-- Structured logging via a central logger module (to be built in Milestone 2).
-- Log levels: `debug`, `info`, `warn`, `error`.
+- Structured logging via `src/logger.ts` — `debug`, `info`, `warn`, `error` levels.
 - Errors include: what failed, what inputs caused it, and what the user impact is.
 - The VS Code Output channel (`component-preview`) surfaces `info` and above to the user.
-- `debug` logs are written to a rotating file in `globalStorageUri` for AI/developer access.
+- `debug` logs are written to `<os.tmpdir()>/component-preview-debug.log` for AI/developer access (no rotation).
 - Goal: AI should be able to diagnose bugs from log output without copy-paste from the user.
 
 ---
@@ -221,8 +220,8 @@ Deprioritized until M3 and M4 are proven.
 | Rendering         | `playwright` (Chromium)        | Industry standard, reliable, headless      |
 | Bundling          | `esbuild`                      | Fast, simple config, good tree-shaking     |
 | Type safety       | TypeScript strict mode         | Catch bugs at compile time                 |
-| Schema validation | `zod`                          | Runtime safety at all external boundaries  |
-| HTTP (if needed)  | `axios`                        | Consistent API, good error handling        |
+| Schema validation | `zod` (recommended)           | Runtime safety at external boundaries — not yet in use |
+| HTTP (if needed)  | `axios` (recommended)         | Consistent API — not yet in use            |
 | CSS compilation   | `sass`, `postcss`              | Per-milestone, added when needed           |
 | JSX compilation   | `esbuild` (built-in)           | Already in the stack, handles TSX/JSX well |
 | Testing           | `@vscode/test-cli` + `mocha`   | Official VS Code test runner               |
@@ -256,8 +255,8 @@ image.
 3. **Fallback to a webview panel** — if the base64 string would exceed the limit, open a proper
    `vscode.WebviewPanel` instead of a hover tooltip; webviews can load `vscode-resource:` URIs
    and have no content-length cap
-4. **Re-evaluate the HTTP image server** — if VS Code ever relaxes hover tooltip CSP for
-   `http://127.0.0.1`, the server in `imageServer.ts` is ready to use and bypasses the size limit
+4. **Re-evaluate an HTTP image server** — if VS Code ever relaxes hover tooltip CSP for
+   `http://127.0.0.1`, a new image server could bypass the size limit (none exists today)
 
 **Recommended near-term fix:** cap screenshot width at ~800px and encode as JPEG at 85% quality
 before base64-encoding. This keeps most previews well under the limit without visible quality loss.

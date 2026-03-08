@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { disposeDevPage } from "./devServerRenderer";
 import { HtmlHoverProvider, PLUGIN_SETUP_COMMAND } from "./hoverProvider";
 import { createImageStore } from "./imageStore";
-import { error as logError, initLogger } from "./logger";
+import { initLogger, error as logError } from "./logger";
 import { compressImageFile, disposeRenderer } from "./renderer";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -20,7 +20,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   ]);
 
   const imageStore = await createImageStore(storageRoot);
-  const provider = new HtmlHoverProvider(previewDir, imageStore, context.globalState);
+  const provider = new HtmlHoverProvider(
+    previewDir,
+    imageStore,
+    context.globalState,
+    path.join(context.extensionPath, "images", "ComponentPreview_Icon-sm.png"),
+  );
 
   const hoverDisposable = vscode.languages.registerHoverProvider(
     [
@@ -60,14 +65,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   );
 
-  const pluginSetupCommand = vscode.commands.registerCommand(
-    PLUGIN_SETUP_COMMAND,
-    async () => {
-      await vscode.env.openExternal(
-        vscode.Uri.parse("https://www.npmjs.com/package/vite-plugin-component-preview"),
-      );
-    },
-  );
+  const pluginSetupCommand = vscode.commands.registerCommand(PLUGIN_SETUP_COMMAND, async () => {
+    await vscode.env.openExternal(
+      vscode.Uri.parse("https://www.npmjs.com/package/vite-plugin-component-preview"),
+    );
+  });
 
   context.subscriptions.push(hoverDisposable, attachCommand, pluginSetupCommand, {
     dispose: () => {

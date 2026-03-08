@@ -12,11 +12,8 @@ import {
 } from "./devServerRenderer";
 import { annotateHtml } from "./htmlAnnotator";
 import { ImageStore } from "./imageStore";
-import { error as logError, info } from "./logger";
-import {
-  isPluginOnlyFrameworkFile,
-  shouldPersistPluginPromptDismissal,
-} from "./pluginOnboarding";
+import { info, error as logError } from "./logger";
+import { isPluginOnlyFrameworkFile, shouldPersistPluginPromptDismissal } from "./pluginOnboarding";
 import { renderElement } from "./renderer";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -36,11 +33,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private pluginSetupPromptInFlight = false;
   private noServerNoticeAtByWorkspace = new Map<string, number>();
   private mismatchNoticeAtByWorkspace = new Map<string, number>();
+  private iconDataUri: string | null = null;
 
   constructor(
     private readonly previewDir: string,
     private readonly imageStore: ImageStore,
     private readonly globalState: vscode.Memento,
+    private readonly iconPath: string,
   ) {}
 
   async provideHover(
@@ -97,7 +96,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     if (!devServerUrl) {
       info("No dev server detected.");
       void this.maybeShowNoServerNotification(workspaceRoot);
-      return this.buildNoServerHover();
+      return await this.buildNoServerHover();
     }
 
     let outputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
@@ -114,12 +113,12 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     } catch (err) {
       if (this.isMissingPluginError(err, document.uri.fsPath)) {
         await this.maybeShowPluginSetupNotification();
-        return this.buildPluginSetupHover();
+        return await this.buildPluginSetupHover();
       }
       const errorMessage = this.getErrorMessage(err);
       logError("dev server render failed:", errorMessage ?? err);
       void this.maybeShowServerMismatchNotification(workspaceRoot, devServerUrl, errorMessage);
-      return this.buildDevServerMismatchHover(devServerUrl, errorMessage);
+      return await this.buildDevServerMismatchHover(devServerUrl, errorMessage);
     }
 
     if (
@@ -287,46 +286,81 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return hover;
   }
 
+  private async getBrandHeader(): Promise<string> {
+    if (this.iconDataUri === null) {
+      try {
+        const ext = path.extname(this.iconPath).toLowerCase();
+        const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+        const base64 = (await fs.readFile(this.iconPath)).toString("base64");
+        this.iconDataUri = `data:${mime};base64,${base64}`;
+      } catch {
+        this.iconDataUri = "";
+      }
+    }
+
+    const extensionLink =
+      "https://marketplace.visualstudio.com/items?itemName=RioEdwards.component-preview";
+    const titleLink = `[**Component Preview**](${extensionLink})`;
+
+    if (!this.iconDataUri) {
+      return titleLink;
+    }
+
+    return `<img src="${this.iconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
+  }
+
   private async buildHover(imagePath: string): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
     const base64 = (await fs.readFile(imagePath)).toString("base64");
+    const brandHeader = await this.getBrandHeader();
 
     const md = new vscode.MarkdownString(
-      `**Component Preview**\n\n<img src="data:${mime};base64,${base64}">`,
+      `${brandHeader}\n\n<img src="data:${mime};base64,${base64}">`,
     );
     md.supportHtml = true;
     md.isTrusted = true;
     return new vscode.Hover(md);
   }
 
-  private buildNoServerHover(): vscode.Hover {
+  private async buildNoServerHover(): Promise<vscode.Hover> {
+    const brandHeader = await this.getBrandHeader();
     const md = new vscode.MarkdownString(
-      "**Component Preview**\n\n" +
+      `${brandHeader}\n\n` +
         "No matching dev server was detected for this workspace.\n\n" +
         "Start the app for this repo, then hover again. " +
         "Set `component-preview.devServerUrl` to the exact server URL to override detection.",
     );
+    md.supportHtml = true;
+    md.isTrusted = true;
     return new vscode.Hover(md);
   }
 
-  private buildDevServerMismatchHover(devServerUrl: string, detail: string | null): vscode.Hover {
+  private async buildDevServerMismatchHover(
+    devServerUrl: string,
+    detail: string | null,
+  ): Promise<vscode.Hover> {
     const detailLine = detail ? `\n\nLast error: \`${detail}\`` : "";
+    const brandHeader = await this.getBrandHeader();
     const md = new vscode.MarkdownString(
-      `**Component Preview**\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
+      `${brandHeader}\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
         "The preview could not match this hover target. This often means the detected server belongs to a different app or route.\n\n" +
         "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again." +
         detailLine,
     );
+    md.supportHtml = true;
+    md.isTrusted = true;
     return new vscode.Hover(md);
   }
 
-  private buildPluginSetupHover(): vscode.Hover {
+  private async buildPluginSetupHover(): Promise<vscode.Hover> {
+    const brandHeader = await this.getBrandHeader();
     const md = new vscode.MarkdownString(
-      "**Component Preview**\n\n" +
+      `${brandHeader}\n\n` +
         "Vue and Svelte previews need the Vite plugin.\n\n" +
         `[Install vite-plugin-component-preview](command:${PLUGIN_SETUP_COMMAND})`,
     );
+    md.supportHtml = true;
     md.isTrusted = true;
     return new vscode.Hover(md);
   }
@@ -371,8 +405,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       err instanceof MissingVitePluginError
         ? ERROR_MISSING_VITE_PLUGIN
         : err && typeof err === "object"
-            ? (err as { code?: string }).code
-            : undefined;
+          ? (err as { code?: string }).code
+          : undefined;
 
     return code === ERROR_MISSING_VITE_PLUGIN;
   }

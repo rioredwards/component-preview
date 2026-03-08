@@ -103,6 +103,28 @@ Flat, priority-ordered ticket list.
   - Notes:
     - Current copied-preview persistence can grow indefinitely over long-term use without visibility.
 
+- [P2] Add privacy mode to disable all persistent preview-image storage
+  - Acceptance criteria:
+    - New setting disables writing persistent preview images (copy-path flow should keep temporary behavior only or require explicit save).
+    - Clear UX copy explains tradeoff (copied temp paths may expire).
+    - Default remains current behavior unless product decision changes.
+  - Dependencies:
+    - Decide default value and migration behavior.
+  - Notes:
+    - Requested for NDA-sensitive workflows.
+
+- [P2] AI handoff helper: copy preview + code context prompt from hover
+  - Acceptance criteria:
+    - Add a hover action/command that assembles an AI-ready prompt in clipboard.
+    - Prompt includes: preview image file path, current file path, hovered line/column, and a bounded code snippet around the hover location.
+    - Prompt template is user-facing, concise, and editable via settings or a configurable template string.
+    - Include privacy guardrails (avoid auto-including entire files; keep snippet size bounded).
+    - Works for HTML/React/Vue/Svelte hover flows.
+  - Dependencies:
+    - Reuse existing hover context and copy-preview-path plumbing.
+  - Notes:
+    - Goal: one-click handoff to AI chats with both visual and code context.
+
 - [P3] Build tooling cleanup: evaluate migration of vite-plugin build pipeline to `tsup`
   - Acceptance criteria:
     - Compare current `tsc + minify script` flow vs `tsup` for simplicity, output quality, and publish artifact control.

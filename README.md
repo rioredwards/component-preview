@@ -124,6 +124,17 @@ It is usable, but still in early beta. Expect occasional rough edges while cover
 
 VS Code or Cursor.
 
+## Privacy & local storage
+
+Component Preview renders and stores preview images locally on your machine.
+
+- Temporary preview captures are stored in the extension's local storage area and cleaned up automatically.
+- If you use copy/persist features, additional preview images may be stored locally for reuse.
+- These images can contain UI from your app (including internal or NDA-protected content).
+
+If you are not comfortable with local preview-image storage, do not use this extension in sensitive projects.
+For highly sensitive or NDA-protected code/UI, review your local storage policy before enabling this workflow.
+
 ## Feedback
 
 Feel free to reach out with any questions, feedback, or suggestions.

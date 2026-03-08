@@ -335,7 +335,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
         "Set `component-preview.devServerUrl` to the exact server URL to override detection.",
     );
     md.supportHtml = true;
-    md.isTrusted = true;
+    md.isTrusted = false;
     return new vscode.Hover(md);
   }
 
@@ -343,7 +343,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     devServerUrl: string,
     detail: string | null,
   ): Promise<vscode.Hover> {
-    const detailLine = detail ? `\n\nLast error: \`${detail}\`` : "";
+    const detailSafe = detail
+      ? detail
+          .replace(/[\\`]/g, "\\$&")
+          .replace(/\r?\n/g, " ")
+          .slice(0, 500)
+      : null;
+    const detailLine = detailSafe ? `\n\nLast error: \`${detailSafe}\`` : "";
     const brandHeader = await this.getBrandHeader();
     const md = new vscode.MarkdownString(
       `${brandHeader}\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
@@ -352,7 +358,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
         detailLine,
     );
     md.supportHtml = true;
-    md.isTrusted = true;
+    md.isTrusted = false;
     return new vscode.Hover(md);
   }
 

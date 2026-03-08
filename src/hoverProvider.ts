@@ -68,7 +68,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const attachedPath = this.imageStore.get(cacheKey);
     if (attachedPath) {
-      return await this.buildHover(attachedPath, elementId, document.uri.toString());
+      return await this.buildHover(attachedPath);
     }
 
     const cached = this.cache.get(cacheKey);
@@ -158,12 +158,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = await this.buildHover(
-      outputPath,
-      elementId,
-      document.uri.toString(),
-      matchMetadata,
-    );
+    const hover = await this.buildHover(outputPath);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
@@ -259,7 +254,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const attachedPath = this.imageStore.get(cacheKey);
     if (attachedPath) {
-      return await this.buildHover(attachedPath, annotated.elementId, document.uri.toString());
+      return await this.buildHover(attachedPath);
     }
 
     const cached = this.cache.get(cacheKey);
@@ -286,27 +281,19 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = await this.buildHover(outputPath, annotated.elementId, document.uri.toString());
+    const hover = await this.buildHover(outputPath);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
   }
 
-  private async buildHover(
-    imagePath: string,
-    elementId: string,
-    documentUri: string,
-    matchMetadata: DevServerMatchMetadata | null = null,
-  ): Promise<vscode.Hover> {
+  private async buildHover(imagePath: string): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
     const base64 = (await fs.readFile(imagePath)).toString("base64");
 
-    const args = encodeURIComponent(JSON.stringify([elementId, documentUri, matchMetadata]));
-    const attachLink = `[📷 Attach image](command:component-preview.attachImage?${args})`;
-
     const md = new vscode.MarkdownString(
-      `<img src="data:${mime};base64,${base64}">\n\n${attachLink}`,
+      `**Component Preview**\n\n<img src="data:${mime};base64,${base64}">`,
     );
     md.supportHtml = true;
     md.isTrusted = true;
@@ -315,7 +302,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
   private buildNoServerHover(): vscode.Hover {
     const md = new vscode.MarkdownString(
-      "No matching dev server was detected for this workspace.\n\n" +
+      "**Component Preview**\n\n" +
+        "No matching dev server was detected for this workspace.\n\n" +
         "Start the app for this repo, then hover again. " +
         "Set `component-preview.devServerUrl` to the exact server URL to override detection.",
     );
@@ -325,7 +313,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private buildDevServerMismatchHover(devServerUrl: string, detail: string | null): vscode.Hover {
     const detailLine = detail ? `\n\nLast error: \`${detail}\`` : "";
     const md = new vscode.MarkdownString(
-      `Detected dev server: \`${devServerUrl}\`.\n\n` +
+      `**Component Preview**\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
         "The preview could not match this hover target. This often means the detected server belongs to a different app or route.\n\n" +
         "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again." +
         detailLine,
@@ -335,7 +323,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
   private buildPluginSetupHover(): vscode.Hover {
     const md = new vscode.MarkdownString(
-      "Vue and Svelte previews need the Vite plugin.\n\n" +
+      "**Component Preview**\n\n" +
+        "Vue and Svelte previews need the Vite plugin.\n\n" +
         `[Install vite-plugin-component-preview](command:${PLUGIN_SETUP_COMMAND})`,
     );
     md.isTrusted = true;

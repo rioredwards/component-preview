@@ -91,6 +91,16 @@ Flat, priority-ordered ticket list.
   - Notes:
     - Requested as part of beta UX polish checklist.
 
+- [P3] Build tooling cleanup: evaluate migration of vite-plugin build pipeline to `tsup`
+  - Acceptance criteria:
+    - Compare current `tsc + minify script` flow vs `tsup` for simplicity, output quality, and publish artifact control.
+    - If migration is adopted, preserve current release guarantees: minified JS, no published sourcemaps, declaration output retained.
+    - Update plugin build docs/scripts and verify with `npm test`, `npm run build`, `npm pack --dry-run`.
+  - Dependencies:
+    - Post-release cleanup window (do not block beta publish).
+  - Notes:
+    - Nice-to-have maintainability improvement; current pipeline is sufficient for release.
+
 - [P1] Fallback hover on composite React components should capture full rendered output (not first host child)
   - Acceptance criteria:
     - Hovering component declarations/usages for fragment-returning components captures the full component output (or a clearly better container) rather than a single child node (e.g., logo image block).

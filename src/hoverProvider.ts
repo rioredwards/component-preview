@@ -160,7 +160,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const labelHint = this.deriveFrameworkLabelHint(document, position);
+    const labelHint = this.deriveFrameworkLabelHint(document, position, matchMetadata);
     const hover = await this.buildHover(outputPath, labelHint);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
@@ -294,7 +294,17 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private deriveFrameworkLabelHint(
     document: vscode.TextDocument,
     position: vscode.Position,
+    matchMetadata?: DevServerMatchMetadata | null,
   ): string {
+    const sourceFile = matchMetadata?.source.file;
+    if (sourceFile) {
+      const fileName = sourceFile.split(/[\\/]/).pop() ?? sourceFile;
+      const stem = fileName.replace(/\.[^.]+$/, "");
+      if (stem) {
+        return stem;
+      }
+    }
+
     const range = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$]*/);
     const symbol = range ? document.getText(range) : "";
     if (/^[A-Z][\w$]*$/.test(symbol)) {

@@ -111,7 +111,8 @@ Flat, priority-ordered ticket list.
   - Dependencies:
     - Revisit hover markdown composition strategy (horizontal rule vs alternative separator).
   - Notes:
-    - Observed after adding markdown `---` dividers: hover showed `<img`/`src=...` text instead of rendering the image.
+    - Observed in the current `hover-fixture-debug-vite-react-js` fixture at a specific hover location: image did not render and the `<img ... src="data:image/...;base64,...">` markup appeared as plain text.
+    - Likely tied to markdown/hover composition and effective payload length in that context, not the intrinsic element type itself.
 
 - [P2] Add privacy mode to disable all persistent preview-image storage
   - Acceptance criteria:

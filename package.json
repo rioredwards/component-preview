@@ -75,6 +75,18 @@
       {
         "command": "component-preview.openPluginSetup",
         "title": "Component Preview: Open Vite Plugin Setup"
+      },
+      {
+        "command": "component-preview.copyPreviewPath",
+        "title": "Component Preview: Copy Preview File Path"
+      },
+      {
+        "command": "component-preview.openStoredPreviewsFolder",
+        "title": "Component Preview: Open Stored Preview Images Folder"
+      },
+      {
+        "command": "component-preview.clearStoredPreviews",
+        "title": "Component Preview: Clear Stored Preview Images"
       }
     ],
     "configuration": {

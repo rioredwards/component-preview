@@ -315,8 +315,11 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     const base64 = (await fs.readFile(imagePath)).toString("base64");
     const brandHeader = await this.getBrandHeader();
 
+    const copyPathArgs = encodeURIComponent(JSON.stringify([imagePath]));
+    const copyPathLink = `[Copy preview file path](command:component-preview.copyPreviewPath?${copyPathArgs})`;
+
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n<img src="data:${mime};base64,${base64}">`,
+      `${brandHeader}\n\n<img src="data:${mime};base64,${base64}">\n\n${copyPathLink}`,
     );
     md.supportHtml = true;
     md.isTrusted = true;

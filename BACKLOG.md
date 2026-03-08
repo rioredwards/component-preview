@@ -91,6 +91,18 @@ Flat, priority-ordered ticket list.
   - Notes:
     - Requested as part of beta UX polish checklist.
 
+- [P1] Manage persistent preview-image storage (discoverability + cleanup controls)
+  - Acceptance criteria:
+    - Add a command to open the persistent image folder in Finder/Explorer.
+    - Add a command to clear persistent copied preview images.
+    - Add a status command that reports image count + total folder size in human-readable units.
+    - Add automatic retention policy for persistent copied previews (e.g., max age and/or max bytes) to prevent unbounded growth.
+    - Document where images are stored and how users can manage them.
+  - Dependencies:
+    - Decide retention defaults and whether to expose settings.
+  - Notes:
+    - Current copied-preview persistence can grow indefinitely over long-term use without visibility.
+
 - [P3] Build tooling cleanup: evaluate migration of vite-plugin build pipeline to `tsup`
   - Acceptance criteria:
     - Compare current `tsc + minify script` flow vs `tsup` for simplicity, output quality, and publish artifact control.

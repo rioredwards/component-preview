@@ -86,14 +86,31 @@ async function getDevPage(devServerUrl: string): Promise<Page> {
   return devPage;
 }
 
-async function pickAdapter(
-  page: Page,
-  opts: DevServerRenderOptions,
-): Promise<{ selected: FrameworkAdapter; detected: FrameworkAdapter[] }> {
+async function detectAdapters(page: Page): Promise<FrameworkAdapter[]> {
   const detected: FrameworkAdapter[] = [];
   for (const adapter of adapters) {
     if (await adapter.detect(page)) {
       detected.push(adapter);
+    }
+  }
+  return detected;
+}
+
+async function pickAdapter(
+  page: Page,
+  opts: DevServerRenderOptions,
+): Promise<{ selected: FrameworkAdapter; detected: FrameworkAdapter[] }> {
+  let detected = await detectAdapters(page);
+
+  // Freshly started dev servers can return HTML before framework hydration has
+  // completed. Retry detection briefly before failing hard.
+  if (detected.length === 0) {
+    for (const waitMs of [150, 350]) {
+      await page.waitForTimeout(waitMs);
+      detected = await detectAdapters(page);
+      if (detected.length > 0) {
+        break;
+      }
     }
   }
 

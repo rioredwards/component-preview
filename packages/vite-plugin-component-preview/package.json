@@ -34,7 +34,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json && node scripts/minify-dist.mjs",
     "check-types": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.16.5",
+    "esbuild": "^0.27.3",
     "typescript": "^5.9.2",
     "vitest": "^4.0.4"
   }

@@ -79,8 +79,10 @@ From the hover preview, you can now:
 The PR action saves the current preview image into your repo and copies a ready-to-paste Markdown snippet like:
 
 ```md
-![Component preview](./.component-preview/previews/preview-20260308-153300-ab12cd34.jpeg)
+![Component preview](./.component-preview/previews/hero-section-20260308-153300-ab12cd34.jpeg)
 ```
+
+File names include a useful label (usually the hovered component/file name) plus a timestamp.
 
 You can customize the save folder with:
 

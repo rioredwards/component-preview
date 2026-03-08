@@ -160,7 +160,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = await this.buildHover(outputPath);
+    const labelHint = this.deriveFrameworkLabelHint(document, position);
+    const hover = await this.buildHover(outputPath, labelHint);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
@@ -283,10 +284,28 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const hover = await this.buildHover(outputPath);
+    const labelHint = this.deriveHtmlLabelHint(document);
+    const hover = await this.buildHover(outputPath, labelHint);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
     return hover;
+  }
+
+  private deriveFrameworkLabelHint(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): string {
+    const range = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$]*/);
+    const symbol = range ? document.getText(range) : "";
+    if (/^[A-Z][\w$]*$/.test(symbol)) {
+      return symbol;
+    }
+
+    return path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
+  }
+
+  private deriveHtmlLabelHint(document: vscode.TextDocument): string {
+    return path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
   }
 
   private async getBrandHeader(): Promise<string> {
@@ -331,7 +350,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return `<img src="${this.errorIconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
   }
 
-  private async buildHover(imagePath: string): Promise<vscode.Hover> {
+  private async buildHover(imagePath: string, labelHint?: string): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
     const base64 = (await fs.readFile(imagePath)).toString("base64");
@@ -339,7 +358,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const copyPathArgs = encodeURIComponent(JSON.stringify([imagePath]));
     const copyPathLink = `[$(copy) Copy Preview Image](command:component-preview.copyPreviewPath?${copyPathArgs})`;
-    const prArgs = encodeURIComponent(JSON.stringify([imagePath]));
+    const prArgs = encodeURIComponent(JSON.stringify([imagePath, labelHint ?? ""]));
     const prLink = `[$(git-pull-request) Save to Repo + Copy PR Markdown](command:component-preview.savePreviewForPr?${prArgs})`;
 
     const md = new vscode.MarkdownString(

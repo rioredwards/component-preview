@@ -110,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const savePreviewForPrCommand = vscode.commands.registerCommand(
     "component-preview.savePreviewForPr",
-    async (imagePath: string) => {
+    async (imagePath: string, labelHint?: string) => {
       if (!imagePath) {
         await vscode.window.showWarningMessage("No preview image available to export for PR.");
         return;
@@ -139,7 +139,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await fs.promises.mkdir(targetDir, { recursive: true });
 
       const ext = normalizeImageExtension(path.extname(imagePath));
-      const fileName = `preview-${timestampForFileName()}-${randomUUID().slice(0, 8)}${ext}`;
+      const baseName = sanitizeFileStem(labelHint || path.basename(imagePath, path.extname(imagePath)));
+      const fileName = `${baseName}-${timestampForFileName()}-${randomUUID().slice(0, 8)}${ext}`;
       const destinationPath = path.join(targetDir, fileName);
 
       await fs.promises.copyFile(imagePath, destinationPath);
@@ -322,4 +323,16 @@ function timestampForFileName(now: Date = new Date()): string {
   const min = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
   return `${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+}
+
+function sanitizeFileStem(raw: string): string {
+  const normalized = raw
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-._]+|[-._]+$/g, "")
+    .toLowerCase();
+
+  return normalized || "preview";
 }

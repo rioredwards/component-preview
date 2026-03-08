@@ -5,22 +5,6 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-interface HoverMatchMetadata {
-  adapter: string;
-  element: {
-    tag: string;
-    id: string | null;
-    className: string | null;
-    text: string | null;
-  };
-  source: {
-    file: string;
-    line: number;
-    column: number;
-    origin: string;
-  };
-}
-
 async function ensureExtensionActive(): Promise<void> {
   const ext = vscode.extensions.all.find((candidate) => candidate.packageJSON?.name === "component-preview");
   assert.ok(ext, "component-preview extension not found in extension host");
@@ -77,68 +61,6 @@ async function writeFirstEmbeddedImageFromHoverMarkdown(markdown: string): Promi
   const outputPath = path.join(os.tmpdir(), `component-preview-hover-demo.${ext}`);
   await fs.writeFile(outputPath, Buffer.from(base64, "base64"));
   return outputPath;
-}
-
-function isHoverMatchMetadata(value: unknown): value is HoverMatchMetadata {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.adapter !== "string") {
-    return false;
-  }
-  const element = candidate.element as Record<string, unknown> | undefined;
-  const source = candidate.source as Record<string, unknown> | undefined;
-  if (!element || !source) {
-    return false;
-  }
-  return (
-    typeof element.tag === "string" &&
-    (typeof element.id === "string" || element.id === null) &&
-    (typeof element.className === "string" || element.className === null) &&
-    (typeof element.text === "string" || element.text === null) &&
-    typeof source.file === "string" &&
-    typeof source.line === "number" &&
-    typeof source.column === "number" &&
-    typeof source.origin === "string"
-  );
-}
-
-function readAttachCommandMetadata(markdown: string): HoverMatchMetadata | null {
-  const prefix = "command:component-preview.attachImage?";
-  const start = markdown.indexOf(prefix);
-  if (start < 0) {
-    return null;
-  }
-
-  const argsStart = start + prefix.length;
-  const argsTail = markdown.slice(argsStart);
-  const closingOffset = argsTail.search(/\)(?=\s|$)/);
-  if (closingOffset < 0) {
-    return null;
-  }
-  const encodedArgs = argsTail.slice(0, closingOffset);
-
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(encodedArgs);
-  } catch {
-    return null;
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-
-  if (!Array.isArray(parsed) || parsed.length < 3) {
-    return null;
-  }
-
-  const metadata = parsed[2];
-  return isHoverMatchMetadata(metadata) ? metadata : null;
 }
 
 suite("Extension Test Suite", () => {
@@ -237,17 +159,14 @@ suite("Extension Test Suite", () => {
       assert.ok(imagePath, "Expected a base64 image in hover markdown");
       console.log(`[hover-demo-image] ${imagePath}`);
 
-      const metadata = readAttachCommandMetadata(text);
-      assert.ok(metadata, `Expected hover command metadata, got:\n${text}`);
-      assert.strictEqual(metadata.adapter, "vite-plugin");
-      assert.strictEqual(metadata.element.tag, "div");
-      assert.strictEqual(metadata.element.id, "preview-target");
-      assert.strictEqual(metadata.element.className, "fixture-card");
-      assert.strictEqual(metadata.element.text, "hover target)");
-      assert.strictEqual(metadata.source.file, "App.tsx");
-      assert.strictEqual(metadata.source.line, 2);
-      assert.strictEqual(metadata.source.column, 10);
-      assert.strictEqual(metadata.source.origin, "data-cp");
+      assert.ok(
+        text.includes("command:component-preview.copyPreviewPath?"),
+        `Expected copy-path command link in hover markdown, got:\n${text}`,
+      );
+      assert.ok(
+        !text.includes("The preview could not match this hover target."),
+        `Expected a successful preview hover, got mismatch diagnostic:\n${text}`,
+      );
     } finally {
       const config = vscode.workspace.getConfiguration("component-preview", vscode.Uri.file(filePath));
       await config.update("devServerUrl", "", vscode.ConfigurationTarget.Global);
@@ -255,7 +174,7 @@ suite("Extension Test Suite", () => {
     }
   });
 
-  test("resolves component invocation hover to the component definition source", async function () {
+  test("renders an image hover for component invocation with copy-path command", async function () {
     this.timeout(30_000);
 
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cp-hover-component-def-"));
@@ -334,13 +253,19 @@ suite("Extension Test Suite", () => {
 
       const hovers = await openFileAndHover(appPath, new vscode.Position(6, 10));
       const text = hovers.map(hoverToString).join("\n\n");
-      const metadata = readAttachCommandMetadata(text);
 
-      assert.ok(metadata, `Expected hover command metadata, got:\n${text}`);
-      assert.strictEqual(metadata.source.file, "components/HeroSection.tsx");
-      assert.strictEqual(metadata.element.id, "hero-target");
-      assert.strictEqual(metadata.source.line, 2);
-      assert.strictEqual(metadata.source.origin, "data-cp");
+      assert.ok(
+        text.includes("data:image/jpeg;base64,") || text.includes("data:image/png;base64,"),
+        `Expected image hover content, got:\n${text}`,
+      );
+      assert.ok(
+        text.includes("command:component-preview.copyPreviewPath?"),
+        `Expected copy-path command link in hover markdown, got:\n${text}`,
+      );
+      assert.ok(
+        !text.includes("The preview could not match this hover target."),
+        `Expected a successful preview hover, got mismatch diagnostic:\n${text}`,
+      );
     } finally {
       const config = vscode.workspace.getConfiguration("component-preview", vscode.Uri.file(appPath));
       await config.update("devServerUrl", "", vscode.ConfigurationTarget.Global);

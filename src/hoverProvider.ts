@@ -10,6 +10,7 @@ import {
   MissingVitePluginError,
   renderFromDevServer,
 } from "./devServerRenderer";
+import { EXTENSION_MARKETPLACE_LINK } from "./extensionConstants";
 import { annotateHtml } from "./htmlAnnotator";
 import { ImageStore } from "./imageStore";
 import { info, error as logError } from "./logger";
@@ -300,9 +301,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       }
     }
 
-    const extensionLink =
-      "https://marketplace.visualstudio.com/items?itemName=RioEdwards.component-preview";
-    const titleLink = `[**Component Preview**](${extensionLink})`;
+    const titleLink = `[**Component Preview**](${EXTENSION_MARKETPLACE_LINK})`;
 
     if (!this.iconDataUri) {
       return titleLink;
@@ -323,9 +322,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       }
     }
 
-    const extensionLink =
-      "https://marketplace.visualstudio.com/items?itemName=RioEdwards.component-preview";
-    const titleLink = `[**Component Preview**](${extensionLink})`;
+    const titleLink = `[**Component Preview**](${EXTENSION_MARKETPLACE_LINK})`;
 
     if (!this.errorIconDataUri) {
       return titleLink;

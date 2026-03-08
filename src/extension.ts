@@ -32,6 +32,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     imageStore,
     context.globalState,
     path.join(context.extensionPath, "images", "ComponentPreview_Icon-sm.png"),
+    path.join(context.extensionPath, "images", "Component-Preview_Error.png"),
   );
 
   const hoverDisposable = vscode.languages.registerHoverProvider(

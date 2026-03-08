@@ -10,6 +10,8 @@ tmp/**
 scripts/**
 images/**
 !images/ComponentPreview_Icon.png
+!images/ComponentPreview_Icon-sm.png
+!images/Component-Preview_Error.png
 .git/**
 .gitignore
 .npmrc

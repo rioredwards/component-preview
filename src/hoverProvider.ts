@@ -34,12 +34,14 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private noServerNoticeAtByWorkspace = new Map<string, number>();
   private mismatchNoticeAtByWorkspace = new Map<string, number>();
   private iconDataUri: string | null = null;
+  private errorIconDataUri: string | null = null;
 
   constructor(
     private readonly previewDir: string,
     private readonly imageStore: ImageStore,
     private readonly globalState: vscode.Memento,
     private readonly iconPath: string,
+    private readonly errorIconPath: string,
   ) {}
 
   async provideHover(
@@ -117,8 +119,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       }
       const errorMessage = this.getErrorMessage(err);
       logError("dev server render failed:", errorMessage ?? err);
-      void this.maybeShowServerMismatchNotification(workspaceRoot, devServerUrl, errorMessage);
-      return await this.buildDevServerMismatchHover(devServerUrl, errorMessage);
+      void this.maybeShowServerMismatchNotification(workspaceRoot, devServerUrl);
+      return await this.buildDevServerMismatchHover(devServerUrl);
     }
 
     if (
@@ -309,6 +311,29 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return `<img src="${this.iconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
   }
 
+  private async getErrorHeader(): Promise<string> {
+    if (this.errorIconDataUri === null) {
+      try {
+        const ext = path.extname(this.errorIconPath).toLowerCase();
+        const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+        const base64 = (await fs.readFile(this.errorIconPath)).toString("base64");
+        this.errorIconDataUri = `data:${mime};base64,${base64}`;
+      } catch {
+        this.errorIconDataUri = "";
+      }
+    }
+
+    const extensionLink =
+      "https://marketplace.visualstudio.com/items?itemName=RioEdwards.component-preview";
+    const titleLink = `[**Component Preview**](${extensionLink})`;
+
+    if (!this.errorIconDataUri) {
+      return titleLink;
+    }
+
+    return `<img src="${this.errorIconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
+  }
+
   private async buildHover(imagePath: string): Promise<vscode.Hover> {
     const ext = path.extname(imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
@@ -327,7 +352,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   }
 
   private async buildNoServerHover(): Promise<vscode.Hover> {
-    const brandHeader = await this.getBrandHeader();
+    const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
       `${brandHeader}\n\n` +
         "No matching dev server was detected for this workspace.\n\n" +
@@ -339,23 +364,12 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return new vscode.Hover(md);
   }
 
-  private async buildDevServerMismatchHover(
-    devServerUrl: string,
-    detail: string | null,
-  ): Promise<vscode.Hover> {
-    const detailSafe = detail
-      ? detail
-          .replace(/[\\`]/g, "\\$&")
-          .replace(/\r?\n/g, " ")
-          .slice(0, 500)
-      : null;
-    const detailLine = detailSafe ? `\n\nLast error: \`${detailSafe}\`` : "";
-    const brandHeader = await this.getBrandHeader();
+  private async buildDevServerMismatchHover(devServerUrl: string): Promise<vscode.Hover> {
+    const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
       `${brandHeader}\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
-        "The preview could not match this hover target. This often means the detected server belongs to a different app or route.\n\n" +
-        "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again." +
-        detailLine,
+        "The preview could not match this hover target. This usually means the detected server belongs to a different app, route, or startup state.\n\n" +
+        "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again.",
     );
     md.supportHtml = true;
     md.isTrusted = false;
@@ -363,7 +377,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   }
 
   private async buildPluginSetupHover(): Promise<vscode.Hover> {
-    const brandHeader = await this.getBrandHeader();
+    const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
       `${brandHeader}\n\n` +
         "Vue and Svelte previews need the Vite plugin.\n\n" +
@@ -461,14 +475,12 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private async maybeShowServerMismatchNotification(
     workspaceRoot: string,
     devServerUrl: string,
-    detail: string | null,
   ): Promise<void> {
     if (!this.shouldShowNotice(this.mismatchNoticeAtByWorkspace, workspaceRoot)) {
       return;
     }
-    const suffix = detail ? ` (${detail})` : "";
     await vscode.window.showWarningMessage(
-      `Component Preview: detected ${devServerUrl} but could not match this hover target${suffix}`,
+      `Component Preview: detected ${devServerUrl} but could not match this hover target. Check app URL/route and try again.`,
     );
   }
 

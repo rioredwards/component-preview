@@ -308,7 +308,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return titleLink;
     }
 
-    return `<img src="${this.iconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
+    return `<img src="${this.iconDataUri}" width="32" height="32" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
   }
 
   private async getErrorHeader(): Promise<string> {
@@ -341,12 +341,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     const brandHeader = await this.getBrandHeader();
 
     const copyPathArgs = encodeURIComponent(JSON.stringify([imagePath]));
-    const copyPathLink = `[Copy preview file path](command:component-preview.copyPreviewPath?${copyPathArgs})`;
+    const copyPathLink = `[$(copy) Copy Preview Image](command:component-preview.copyPreviewPath?${copyPathArgs})`;
 
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n<img src="data:${mime};base64,${base64}">\n\n${copyPathLink}`,
+      `${brandHeader}\n\n---\n\n<img src="data:${mime};base64,${base64}">\n\n---\n\n${copyPathLink}`,
     );
     md.supportHtml = true;
+    md.supportThemeIcons = true;
     md.isTrusted = true;
     return new vscode.Hover(md);
   }
@@ -354,7 +355,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private async buildNoServerHover(): Promise<vscode.Hover> {
     const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n` +
+      `${brandHeader}\n\n---\n\n` +
         "No matching dev server was detected for this workspace.\n\n" +
         "Start the app for this repo, then hover again. " +
         "Set `component-preview.devServerUrl` to the exact server URL to override detection.",
@@ -367,7 +368,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private async buildDevServerMismatchHover(devServerUrl: string): Promise<vscode.Hover> {
     const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
+      `${brandHeader}\n\n---\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
         "The preview could not match this hover target. This usually means the detected server belongs to a different app, route, or startup state.\n\n" +
         "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again.",
     );
@@ -379,7 +380,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private async buildPluginSetupHover(): Promise<vscode.Hover> {
     const brandHeader = await this.getErrorHeader();
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n` +
+      `${brandHeader}\n\n---\n\n` +
         "Vue and Svelte previews need the Vite plugin.\n\n" +
         `[Install vite-plugin-component-preview](command:${PLUGIN_SETUP_COMMAND})`,
     );

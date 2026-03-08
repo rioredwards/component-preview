@@ -103,6 +103,16 @@ Flat, priority-ordered ticket list.
   - Notes:
     - Current copied-preview persistence can grow indefinitely over long-term use without visibility.
 
+- [P1] Hover markdown regression: divider formatting can cause preview image HTML to render as raw text
+  - Acceptance criteria:
+    - Preview hover consistently renders the actual image (not raw `<img ...>` text) across supported editor themes and markdown settings.
+    - Visual separation between header/content is preserved without breaking HTML image rendering.
+    - Add regression test/fixture coverage for branded header + divider + image block markdown composition.
+  - Dependencies:
+    - Revisit hover markdown composition strategy (horizontal rule vs alternative separator).
+  - Notes:
+    - Observed after adding markdown `---` dividers: hover showed `<img`/`src=...` text instead of rendering the image.
+
 - [P2] Add privacy mode to disable all persistent preview-image storage
   - Acceptance criteria:
     - New setting disables writing persistent preview images (copy-path flow should keep temporary behavior only or require explicit save).

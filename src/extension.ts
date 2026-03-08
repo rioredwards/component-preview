@@ -108,6 +108,60 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   );
 
+  const savePreviewForPrCommand = vscode.commands.registerCommand(
+    "component-preview.savePreviewForPr",
+    async (imagePath: string) => {
+      if (!imagePath) {
+        await vscode.window.showWarningMessage("No preview image available to export for PR.");
+        return;
+      }
+
+      const workspaceRoot = getActiveWorkspaceRoot();
+      if (!workspaceRoot) {
+        await vscode.window.showWarningMessage(
+          "Open a workspace folder to save preview images for PR markdown.",
+        );
+        return;
+      }
+
+      const config = vscode.workspace.getConfiguration("component-preview");
+      const configuredRelDir = (config.get<string>("prImageDir") ?? ".component-preview/previews").trim();
+      const safeRelDir = configuredRelDir.replace(/^([/\\])+/, "");
+      const targetDir = path.resolve(workspaceRoot, safeRelDir || ".component-preview/previews");
+
+      if (!isPathInside(workspaceRoot, targetDir)) {
+        await vscode.window.showWarningMessage(
+          "component-preview.prImageDir must stay inside the current workspace.",
+        );
+        return;
+      }
+
+      await fs.promises.mkdir(targetDir, { recursive: true });
+
+      const ext = normalizeImageExtension(path.extname(imagePath));
+      const fileName = `preview-${timestampForFileName()}-${randomUUID().slice(0, 8)}${ext}`;
+      const destinationPath = path.join(targetDir, fileName);
+
+      await fs.promises.copyFile(imagePath, destinationPath);
+
+      const relPath = path
+        .relative(workspaceRoot, destinationPath)
+        .split(path.sep)
+        .join("/");
+      const markdown = `![Component preview](./${relPath})`;
+
+      await vscode.env.clipboard.writeText(markdown);
+      await vscode.window.showInformationMessage(
+        "Saved preview to repo and copied PR markdown.",
+        "Open Folder",
+      ).then(async (choice) => {
+        if (choice === "Open Folder") {
+          await vscode.env.openExternal(vscode.Uri.file(targetDir));
+        }
+      });
+    },
+  );
+
   const openStoredPreviewsCommand = vscode.commands.registerCommand(
     "component-preview.openStoredPreviewsFolder",
     async () => {
@@ -148,6 +202,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     hoverDisposable,
     attachCommand,
     copyPreviewPathCommand,
+    savePreviewForPrCommand,
     openStoredPreviewsCommand,
     clearStoredPreviewsCommand,
     pluginSetupCommand,
@@ -232,3 +287,39 @@ async function prunePersistedPreviews(attachedDir: string): Promise<void> {
 }
 
 export function deactivate(): void {}
+
+function getActiveWorkspaceRoot(): string | null {
+  const activeUri = vscode.window.activeTextEditor?.document.uri;
+  if (activeUri) {
+    const folder = vscode.workspace.getWorkspaceFolder(activeUri);
+    if (folder) {
+      return folder.uri.fsPath;
+    }
+  }
+
+  const first = vscode.workspace.workspaceFolders?.[0];
+  return first?.uri.fsPath ?? null;
+}
+
+function isPathInside(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function normalizeImageExtension(ext: string): ".png" | ".jpg" | ".jpeg" | ".webp" {
+  const normalized = ext.toLowerCase();
+  if (normalized === ".png" || normalized === ".jpg" || normalized === ".jpeg" || normalized === ".webp") {
+    return normalized;
+  }
+  return ".jpeg";
+}
+
+function timestampForFileName(now: Date = new Date()): string {
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  return `${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+}

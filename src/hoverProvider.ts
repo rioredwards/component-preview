@@ -339,9 +339,11 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     const copyPathArgs = encodeURIComponent(JSON.stringify([imagePath]));
     const copyPathLink = `[$(copy) Copy Preview Image](command:component-preview.copyPreviewPath?${copyPathArgs})`;
+    const prArgs = encodeURIComponent(JSON.stringify([imagePath]));
+    const prLink = `[$(git-pull-request) Save to Repo + Copy PR Markdown](command:component-preview.savePreviewForPr?${prArgs})`;
 
     const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n---\n\n<img src="data:${mime};base64,${base64}">\n\n---\n\n${copyPathLink}`,
+      `${brandHeader}\n\n---\n\n<img src="data:${mime};base64,${base64}">\n\n---\n\n${copyPathLink}  \n${prLink}`,
     );
     md.supportHtml = true;
     md.supportThemeIcons = true;

@@ -81,6 +81,10 @@
         "title": "Component Preview: Copy Preview File Path"
       },
       {
+        "command": "component-preview.savePreviewForPr",
+        "title": "Component Preview: Save Preview to Repo and Copy PR Markdown"
+      },
+      {
         "command": "component-preview.openStoredPreviewsFolder",
         "title": "Component Preview: Open Stored Preview Images Folder"
       },
@@ -96,6 +100,11 @@
           "type": "string",
           "default": "",
           "description": "Optional dev server URL override. Example: http://localhost:5173"
+        },
+        "component-preview.prImageDir": {
+          "type": "string",
+          "default": ".component-preview/previews",
+          "description": "Repository-relative folder where PR-ready preview images are saved."
         }
       }
     }

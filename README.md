@@ -69,6 +69,23 @@ Or add it directly in `settings.json`:
 }
 ```
 
+## PR-ready exports
+
+From the hover preview, you can now:
+
+- **Copy Preview Image** (absolute file path)
+- **Save to Repo + Copy PR Markdown**
+
+The PR action saves the current preview image into your repo and copies a ready-to-paste Markdown snippet like:
+
+```md
+![Component preview](./.component-preview/previews/preview-20260308-153300-ab12cd34.jpeg)
+```
+
+You can customize the save folder with:
+
+- `component-preview.prImageDir` (default: `.component-preview/previews`)
+
 ## Troubleshooting
 
 ### Preview does not appear

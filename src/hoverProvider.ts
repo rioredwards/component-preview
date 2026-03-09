@@ -21,7 +21,6 @@ import { renderElement } from "./renderer";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 50;
 const PLUGIN_SETUP_STATE_KEY = "component-preview.plugin-setup-dismissed";
-const NOTICE_TTL_MS = 60_000;
 
 export const PLUGIN_SETUP_COMMAND = "component-preview.openPluginSetup";
 
@@ -33,8 +32,6 @@ interface CacheEntry {
 export class HtmlHoverProvider implements vscode.HoverProvider {
   private cache = new Map<string, CacheEntry>();
   private pluginSetupPromptInFlight = false;
-  private noServerNoticeAtByWorkspace = new Map<string, number>();
-  private mismatchNoticeAtByWorkspace = new Map<string, number>();
   private iconDataUri: string | null = null;
   private errorIconDataUri: string | null = null;
 
@@ -99,8 +96,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
 
     if (!devServerUrl) {
       info("No dev server detected.");
-      void this.maybeShowNoServerNotification(workspaceRoot);
-      return await this.buildNoServerHover();
+      return this.buildErrorHover();
     }
 
     let outputPath = path.join(this.previewDir, `${randomUUID()}.jpeg`);
@@ -117,12 +113,11 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     } catch (err) {
       if (this.isMissingPluginError(err, document.uri.fsPath)) {
         await this.maybeShowPluginSetupNotification();
-        return await this.buildPluginSetupHover();
+        return this.buildErrorHover();
       }
       const errorMessage = this.getErrorMessage(err);
       logError("dev server render failed:", errorMessage ?? err);
-      void this.maybeShowServerMismatchNotification(workspaceRoot, devServerUrl);
-      return await this.buildDevServerMismatchHover(devServerUrl);
+      return this.buildErrorHover();
     }
 
     if (
@@ -414,39 +409,12 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return new vscode.Hover(md);
   }
 
-  private async buildNoServerHover(): Promise<vscode.Hover> {
+  private async buildErrorHover(): Promise<vscode.Hover> {
     const brandHeader = await this.getErrorHeader();
-    const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n---\n\n` +
-        "No matching dev server was detected for this workspace.\n\n" +
-        "Start the app for this repo, then hover again. " +
-        "Set `component-preview.devServerUrl` to the exact server URL to override detection.",
-    );
+    const helpLink = `[$(question)](${EXTENSION_MARKETPLACE_LINK} "Help")`;
+    const md = new vscode.MarkdownString(`${brandHeader} | ${helpLink}`);
     md.supportHtml = true;
-    md.isTrusted = false;
-    return new vscode.Hover(md);
-  }
-
-  private async buildDevServerMismatchHover(devServerUrl: string): Promise<vscode.Hover> {
-    const brandHeader = await this.getErrorHeader();
-    const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n---\n\nDetected dev server: \`${devServerUrl}\`.\n\n` +
-        "The preview could not match this hover target. This usually means the detected server belongs to a different app, route, or startup state.\n\n" +
-        "Set `component-preview.devServerUrl` to the exact app URL for this workspace, then hover again.",
-    );
-    md.supportHtml = true;
-    md.isTrusted = false;
-    return new vscode.Hover(md);
-  }
-
-  private async buildPluginSetupHover(): Promise<vscode.Hover> {
-    const brandHeader = await this.getErrorHeader();
-    const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n---\n\n` +
-        "Vue and Svelte previews need the Vite plugin.\n\n" +
-        `[Install vite-plugin-component-preview](command:${PLUGIN_SETUP_COMMAND})`,
-    );
-    md.supportHtml = true;
+    md.supportThemeIcons = true;
     md.isTrusted = true;
     return new vscode.Hover(md);
   }
@@ -511,40 +479,6 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       }
     }
     return null;
-  }
-
-  private shouldShowNotice(
-    map: Map<string, number>,
-    workspaceRoot: string,
-    now: number = Date.now(),
-  ): boolean {
-    const prev = map.get(workspaceRoot);
-    if (prev !== undefined && now - prev < NOTICE_TTL_MS) {
-      return false;
-    }
-    map.set(workspaceRoot, now);
-    return true;
-  }
-
-  private async maybeShowNoServerNotification(workspaceRoot: string): Promise<void> {
-    if (!this.shouldShowNotice(this.noServerNoticeAtByWorkspace, workspaceRoot)) {
-      return;
-    }
-    await vscode.window.showWarningMessage(
-      "Component Preview: no matching dev server found for this workspace. Set component-preview.devServerUrl to override.",
-    );
-  }
-
-  private async maybeShowServerMismatchNotification(
-    workspaceRoot: string,
-    devServerUrl: string,
-  ): Promise<void> {
-    if (!this.shouldShowNotice(this.mismatchNoticeAtByWorkspace, workspaceRoot)) {
-      return;
-    }
-    await vscode.window.showWarningMessage(
-      `Component Preview: detected ${devServerUrl} but could not match this hover target. Check app URL/route and try again.`,
-    );
   }
 
   private evictIfNeeded(): void {

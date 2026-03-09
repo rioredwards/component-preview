@@ -1,6 +1,6 @@
 # Component Preview
 
-Show rendered UI previews on hover inside VS Code.
+Show rendered UI previews on hover inside VS Code and Cursor.
 
 <p align="center">
   <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Banner.jpg" alt="Component Preview banner" width="100%" />
@@ -16,7 +16,7 @@ or trying to understand a UI quickly.
 ## Demo
 
 <p align="center">
-  <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Demo.gif" alt="Component Preview demo" width="100%" />
+  <img src="https://assets.rioedwards.com/component-preview/ComponentPreview_Demo_optimized.gif" alt="Component Preview demo" width="100%" />
 </p>
 
 ## Language support
@@ -106,7 +106,7 @@ You can customize the save folder with:
 - Save and hover again.
 - Confirm the component is currently rendered in your running app.
 
-**Note:** This app is still in early beta and being actively developed, so expect some rough edges. These will be smoothed out over time. You can submit an issue or feature request here: <TODO: Add issue tracker link>
+**Note:** This app is still in early beta and being actively developed, so expect some rough edges. These will be smoothed out over time. You can submit an issue or feature request here: [GitHub Issues](https://github.com/rioredwards/component-preview/issues)
 
 ## FAQ
 

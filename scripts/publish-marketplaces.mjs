@@ -2,6 +2,8 @@
 import { execSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 
+try { process.loadEnvFile(); } catch { /* no .env file */ }
+
 function shellQuote(value) {
   if (!value) return "";
   return JSON.stringify(String(value));
@@ -35,18 +37,21 @@ const baseUrlArgs = [
 run(`npm run package && npx @vscode/vsce package --no-dependencies ${baseUrlArgs}`.trim());
 const vsix = latestVsix();
 
+const vscePat = process.env.VSCE_PAT || process.env.PERSONAL_ACCESS_TOKEN_MICROSOFT;
+const ovsxPat = process.env.OVSX_PAT || process.env.PERSONAL_ACCESS_TOKEN_OPEN_VSX;
+
 if (mode === "open-vsx" || mode === "all") {
-  if (!process.env.OVSX_PAT) {
-    throw new Error("Missing OVSX_PAT env var for Open VSX publish.");
+  if (!ovsxPat) {
+    throw new Error("Missing OVSX_PAT or PERSONAL_ACCESS_TOKEN_OPEN_VSX env var for Open VSX publish.");
   }
-  run(`npx ovsx publish ${vsix} -p ${process.env.OVSX_PAT} ${baseUrlArgs}`.trim());
+  run(`npx ovsx publish ${vsix} -p ${ovsxPat} ${baseUrlArgs}`.trim());
 }
 
 if (mode === "vscode" || mode === "all") {
-  // VS Code Marketplace publish reads VSCE_PAT from env.
-  if (!process.env.VSCE_PAT) {
-    throw new Error("Missing VSCE_PAT env var for VS Code Marketplace publish.");
+  if (!vscePat) {
+    throw new Error("Missing VSCE_PAT or PERSONAL_ACCESS_TOKEN_MICROSOFT env var for VS Code Marketplace publish.");
   }
+  process.env.VSCE_PAT = vscePat;
   run(`npx @vscode/vsce publish --packagePath ${vsix} ${baseUrlArgs}`.trim());
 }
 

@@ -284,7 +284,7 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const labelHint = this.deriveHtmlLabelHint(document);
+    const labelHint = this.deriveHtmlLabelHint(document, position);
     const hover = await this.buildHover(outputPath, labelHint);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
@@ -292,6 +292,23 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   }
 
   private deriveFrameworkLabelHint(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    matchMetadata?: DevServerMatchMetadata | null,
+  ): string {
+    const componentOrFile = this.deriveFrameworkBaseLabel(document, position, matchMetadata);
+
+    if (matchMetadata) {
+      const tag = matchMetadata.element.tag || "element";
+      const line = matchMetadata.source.line;
+      const column = matchMetadata.source.column;
+      return `${componentOrFile}-${tag}-l${line}c${column}`;
+    }
+
+    return componentOrFile;
+  }
+
+  private deriveFrameworkBaseLabel(
     document: vscode.TextDocument,
     position: vscode.Position,
     matchMetadata?: DevServerMatchMetadata | null,
@@ -314,8 +331,9 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
   }
 
-  private deriveHtmlLabelHint(document: vscode.TextDocument): string {
-    return path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
+  private deriveHtmlLabelHint(document: vscode.TextDocument, position: vscode.Position): string {
+    const stem = path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
+    return `${stem}-l${position.line + 1}c${position.character + 1}`;
   }
 
   private async getBrandHeader(): Promise<string> {

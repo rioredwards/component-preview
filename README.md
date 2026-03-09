@@ -82,7 +82,7 @@ The PR action saves the current preview image into your repo and copies a ready-
 ![Component preview](./.component-preview/previews/hero-section-20260308-153300-ab12cd34.jpeg)
 ```
 
-File names include a useful label (usually the hovered component/file name) plus a timestamp.
+File names include a useful label (hovered component/file), element details (like tag + source line/column), plus a timestamp.
 
 You can customize the save folder with:
 

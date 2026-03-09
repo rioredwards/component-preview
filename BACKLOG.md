@@ -29,6 +29,19 @@ Flat, priority-ordered ticket list.
 
 ---
 
+- [P1] Snapshot manager architecture for export-first roadmap (local-first now, cloud-ready later)
+  - Acceptance criteria:
+    - Define a clear snapshot lifecycle model: capture → label → persist → index → export.
+    - Introduce a local metadata index for saved previews (JSON manifest acceptable initially) including: id, image path, source file, line/column, element tag, timestamp, export label, and hash.
+    - Refactor export/copy flows to read/write through a single snapshot service instead of ad-hoc per-command handling.
+    - Keep base hover experience unchanged and fast (no heavy dependency required for default hover path).
+    - Document migration path from manifest to SQLite when query needs justify it (search/history/compare scale), with no breaking changes to saved image files.
+  - Dependencies:
+    - Light design pass for snapshot service boundaries and metadata schema.
+  - Notes:
+    - Product goal: make “do useful things with previews” a first-class pillar (PR packs, history, compare, AI handoff) while preserving simple hover-first UX.
+    - Recommendation: stage adoption — manifest first, SQLite later when ROI is clear.
+
 - [P1] AI-first setup and troubleshooting prompts (README + error UX)
   - Acceptance criteria:
     - README includes a copy-paste "AI setup prompt" near the top that guides an AI agent to install and configure component-preview in an existing repo.

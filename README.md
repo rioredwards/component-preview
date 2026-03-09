@@ -10,8 +10,7 @@ Show rendered UI previews on hover inside VS Code and Cursor.
 
 Component Preview lets you hover UI code and instantly see what that component looks like.
 
-It is built for fast feedback while you code, especially when you are scanning unfamiliar files
-or trying to understand a UI quickly.
+It is built for fast feedback while you code, especially when you are scanning unfamiliar files or trying to understand a UI quickly. In addition, it allows you to easily export previews for sharing (e.g. in pull requests)
 
 ## Demo
 
@@ -89,7 +88,7 @@ From the hover preview, you can now:
 The PR action saves the current preview image into your repo and copies a ready-to-paste Markdown snippet like:
 
 ```md
-![Component preview](./.component-preview/previews/hero-section-20260308-153300-ab12cd34.jpeg)
+![Component preview](./.component-preview/previews/hero-section-div-l10c9-20260309-153300-ab12cd34.jpeg)
 ```
 
 File names include a useful label (hovered component/file), element details (like tag + source line/column), plus a timestamp.

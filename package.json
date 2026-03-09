@@ -1,6 +1,6 @@
 {
   "name": "component-preview",
-  "displayName": "component-preview",
+  "displayName": "Component Preview",
   "description": "Instant component previews on hover for HTML/React/Vue/Svelte in local dev.",
   "version": "0.1.0",
   "publisher": "RioEdwards",

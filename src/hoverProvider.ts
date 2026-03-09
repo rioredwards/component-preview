@@ -11,8 +11,8 @@ import {
   renderFromDevServer,
 } from "./devServerRenderer";
 import { EXTENSION_MARKETPLACE_LINK } from "./extensionConstants";
-import { annotateHtml } from "./htmlAnnotator";
 import { assembleHoverMarkdown } from "./hoverMarkdown";
+import { annotateHtml } from "./htmlAnnotator";
 import { ImageStore } from "./imageStore";
 import { info, error as logError } from "./logger";
 import { isPluginOnlyFrameworkFile, shouldPersistPluginPromptDismissal } from "./pluginOnboarding";
@@ -355,10 +355,8 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
   private async getBrandHeader(): Promise<string> {
     if (this.iconDataUri === null) {
       try {
-        const ext = path.extname(this.iconPath).toLowerCase();
-        const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
         const base64 = (await fs.readFile(this.iconPath)).toString("base64");
-        this.iconDataUri = `data:${mime};base64,${base64}`;
+        this.iconDataUri = `data:image/png;base64,${base64}`;
       } catch {
         this.iconDataUri = "";
       }
@@ -368,28 +366,24 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return this.getTextOnlyBrandHeader();
     }
 
-    return `<img src="${this.iconDataUri}" width="32" height="32" style="vertical-align:middle;margin-right:6px;" /> ${this.getTextOnlyBrandHeader()}`;
+    return `<img src="${this.iconDataUri}" width="auto" height="16" style="vertical-align:middle;margin-right:8px;" /> ${this.getTextOnlyBrandHeader()}`;
   }
 
   private async getErrorHeader(): Promise<string> {
     if (this.errorIconDataUri === null) {
       try {
-        const ext = path.extname(this.errorIconPath).toLowerCase();
-        const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
         const base64 = (await fs.readFile(this.errorIconPath)).toString("base64");
-        this.errorIconDataUri = `data:${mime};base64,${base64}`;
+        this.errorIconDataUri = `data:image/png;base64,${base64}`;
       } catch {
         this.errorIconDataUri = "";
       }
     }
 
-    const titleLink = `[**Component Preview**](${EXTENSION_MARKETPLACE_LINK})`;
-
     if (!this.errorIconDataUri) {
-      return titleLink;
+      return this.getTextOnlyBrandHeader();
     }
 
-    return `<img src="${this.errorIconDataUri}" width="48" height="48" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
+    return `<img src="${this.errorIconDataUri}" width="auto" height="16" style="vertical-align:middle;margin-right:8px;" /> ${this.getTextOnlyBrandHeader()}`;
   }
 
   private async buildHover(imagePath: string, labelHint?: string): Promise<vscode.Hover> {

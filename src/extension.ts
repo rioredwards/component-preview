@@ -31,8 +31,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     previewDir,
     imageStore,
     context.globalState,
-    path.join(context.extensionPath, "images", "ComponentPreview_Icon-sm.png"),
-    path.join(context.extensionPath, "images", "Component-Preview_Error.png"),
+    path.join(context.extensionPath, "images", "ComponentPreview_Icon-cam.png"),
+    path.join(context.extensionPath, "images", "ComponentPreview_Icon-cam-grey.png"),
   );
 
   const hoverDisposable = vscode.languages.registerHoverProvider(
@@ -125,7 +125,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       const config = vscode.workspace.getConfiguration("component-preview");
-      const configuredRelDir = (config.get<string>("prImageDir") ?? ".component-preview/previews").trim();
+      const configuredRelDir = (
+        config.get<string>("prImageDir") ?? ".component-preview/previews"
+      ).trim();
       const safeRelDir = configuredRelDir.replace(/^([/\\])+/, "");
       const targetDir = path.resolve(workspaceRoot, safeRelDir || ".component-preview/previews");
 
@@ -139,27 +141,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await fs.promises.mkdir(targetDir, { recursive: true });
 
       const ext = normalizeImageExtension(path.extname(imagePath));
-      const baseName = sanitizeFileStem(labelHint || path.basename(imagePath, path.extname(imagePath)));
+      const baseName = sanitizeFileStem(
+        labelHint || path.basename(imagePath, path.extname(imagePath)),
+      );
       const fileName = `${baseName}-${timestampForFileName()}-${randomUUID().slice(0, 8)}${ext}`;
       const destinationPath = path.join(targetDir, fileName);
 
       await fs.promises.copyFile(imagePath, destinationPath);
 
-      const relPath = path
-        .relative(workspaceRoot, destinationPath)
-        .split(path.sep)
-        .join("/");
+      const relPath = path.relative(workspaceRoot, destinationPath).split(path.sep).join("/");
       const markdown = `![Component preview](./${relPath})`;
 
       await vscode.env.clipboard.writeText(markdown);
-      await vscode.window.showInformationMessage(
-        "Saved preview to repo and copied PR markdown.",
-        "Open Folder",
-      ).then(async (choice) => {
-        if (choice === "Open Folder") {
-          await vscode.env.openExternal(vscode.Uri.file(targetDir));
-        }
-      });
+      await vscode.window
+        .showInformationMessage("Saved preview to repo and copied PR markdown.", "Open Folder")
+        .then(async (choice) => {
+          if (choice === "Open Folder") {
+            await vscode.env.openExternal(vscode.Uri.file(targetDir));
+          }
+        });
     },
   );
 
@@ -309,7 +309,12 @@ function isPathInside(root: string, candidate: string): boolean {
 
 function normalizeImageExtension(ext: string): ".png" | ".jpg" | ".jpeg" | ".webp" {
   const normalized = ext.toLowerCase();
-  if (normalized === ".png" || normalized === ".jpg" || normalized === ".jpeg" || normalized === ".webp") {
+  if (
+    normalized === ".png" ||
+    normalized === ".jpg" ||
+    normalized === ".jpeg" ||
+    normalized === ".webp"
+  ) {
     return normalized;
   }
   return ".jpeg";

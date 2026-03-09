@@ -12,6 +12,7 @@ import {
 } from "./devServerRenderer";
 import { EXTENSION_MARKETPLACE_LINK } from "./extensionConstants";
 import { annotateHtml } from "./htmlAnnotator";
+import { assembleHoverMarkdown } from "./hoverMarkdown";
 import { ImageStore } from "./imageStore";
 import { info, error as logError } from "./logger";
 import { isPluginOnlyFrameworkFile, shouldPersistPluginPromptDismissal } from "./pluginOnboarding";
@@ -347,6 +348,10 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     return `${stem}-l${position.line + 1}c${position.character + 1}`;
   }
 
+  private getTextOnlyBrandHeader(): string {
+    return `[**Component Preview**](${EXTENSION_MARKETPLACE_LINK})`;
+  }
+
   private async getBrandHeader(): Promise<string> {
     if (this.iconDataUri === null) {
       try {
@@ -359,13 +364,11 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       }
     }
 
-    const titleLink = `[**Component Preview**](${EXTENSION_MARKETPLACE_LINK})`;
-
     if (!this.iconDataUri) {
-      return titleLink;
+      return this.getTextOnlyBrandHeader();
     }
 
-    return `<img src="${this.iconDataUri}" width="32" height="32" style="vertical-align:middle;margin-right:6px;" /> ${titleLink}`;
+    return `<img src="${this.iconDataUri}" width="32" height="32" style="vertical-align:middle;margin-right:6px;" /> ${this.getTextOnlyBrandHeader()}`;
   }
 
   private async getErrorHeader(): Promise<string> {
@@ -394,15 +397,23 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     const mime = ext === ".png" ? "image/png" : "image/jpeg";
     const base64 = (await fs.readFile(imagePath)).toString("base64");
     const brandHeader = await this.getBrandHeader();
+    const textOnlyBrandHeader = this.getTextOnlyBrandHeader();
 
     const copyPathArgs = encodeURIComponent(JSON.stringify([imagePath]));
     const copyPathLink = `[$(copy) Copy Preview Image](command:component-preview.copyPreviewPath?${copyPathArgs})`;
     const prArgs = encodeURIComponent(JSON.stringify([imagePath, labelHint ?? ""]));
     const prLink = `[$(git-pull-request) Save to Repo + Copy PR Markdown](command:component-preview.savePreviewForPr?${prArgs})`;
 
-    const md = new vscode.MarkdownString(
-      `${brandHeader}\n\n---\n\n<img src="data:${mime};base64,${base64}">\n\n---\n\n${copyPathLink}  \n${prLink}`,
+    const actionLinks = `${copyPathLink}  \n${prLink}`;
+    const markdownValue = assembleHoverMarkdown(
+      base64,
+      mime,
+      brandHeader,
+      textOnlyBrandHeader,
+      actionLinks,
     );
+
+    const md = new vscode.MarkdownString(markdownValue);
     md.supportHtml = true;
     md.supportThemeIcons = true;
     md.isTrusted = true;

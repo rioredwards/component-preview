@@ -160,7 +160,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
       return null;
     }
 
-    const labelHint = this.deriveFrameworkLabelHint(document, position, matchMetadata);
+    const isInvocationHover = this.isComponentInvocationHover(document, position);
+    const labelHint = this.deriveFrameworkLabelHint(
+      document,
+      position,
+      matchMetadata,
+      isInvocationHover,
+    );
     const hover = await this.buildHover(outputPath, labelHint);
     this.evictIfNeeded();
     this.cache.set(cacheKey, { hover, timestamp: Date.now() });
@@ -295,8 +301,13 @@ export class HtmlHoverProvider implements vscode.HoverProvider {
     document: vscode.TextDocument,
     position: vscode.Position,
     matchMetadata?: DevServerMatchMetadata | null,
+    isInvocationHover: boolean = false,
   ): string {
     const componentOrFile = this.deriveFrameworkBaseLabel(document, position, matchMetadata);
+
+    if (isInvocationHover) {
+      return `${componentOrFile}-call-l${position.line + 1}c${position.character + 1}`;
+    }
 
     if (matchMetadata) {
       const tag = matchMetadata.element.tag || "element";

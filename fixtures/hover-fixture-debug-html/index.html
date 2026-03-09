@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Preview Demo</title>
+    <style>
+      :root {
+        color-scheme: dark light;
+        --bg: #050816;
+        --bg-soft: #0f172a;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.15);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: rgba(148, 163, 184, 0.4);
+        --radius-lg: 16px;
+        --radius-sm: 10px;
+        --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.7);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "SF Pro Text",
+          "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #0b1120 0, var(--bg) 52%);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+      }
+
+      .frame {
+        width: min(960px, 100%);
+        background: radial-gradient(
+          circle at top left,
+          #020617 0,
+          #020617 38%,
+          #020617dd 70%,
+          #020617f5 100%
+        );
+        border-radius: 28px;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        box-shadow: var(--shadow-soft);
+        padding: 22px 22px 26px;
+        backdrop-filter: blur(24px);
+      }
+
+      .frame-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        gap: 12px;
+      }
+
+      .traffic-lights {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .traffic-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #ef4444;
+      }
+
+      .traffic-dot:nth-child(2) {
+        background: #f97316;
+      }
+
+      .traffic-dot:nth-child(3) {
+        background: #22c55e;
+      }
+
+      .frame-title {
+        flex: 1;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.7);
+        padding: 2px 8px 2px 3px;
+        font-size: 11px;
+        color: var(--muted);
+        background: radial-gradient(circle at top, #020617, #020617f5 50%, #020617);
+      }
+
+      .badge-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a 65%, #166534);
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 5.5fr) minmax(0, 4.5fr);
+        gap: 20px;
+      }
+
+      .hero {
+        padding: 18px 18px 20px;
+        border-radius: var(--radius-lg);
+        background:
+          radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%),
+          linear-gradient(to bottom right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+        border: 1px solid rgba(148, 163, 184, 0.5);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--accent);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .eyebrow-pill {
+        width: 24px;
+        height: 1px;
+        border-radius: 999px;
+        background: linear-gradient(to right, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.85));
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.1;
+        margin: 0 0 10px;
+        letter-spacing: -0.03em;
+      }
+
+      .lead {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 34rem;
+        margin-bottom: 16px;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .button-primary {
+        background: radial-gradient(circle at top left, #38bdf8, #0ea5e9);
+        color: #0b1120;
+        border-radius: 999px;
+        border: none;
+        padding: 8px 15px;
+        font-size: 13px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        box-shadow: 0 12px 30px rgba(56, 189, 248, 0.4);
+      }
+
+      .button-primary span {
+        font-size: 11px;
+        opacity: 0.9;
+      }
+
+      .cta-note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      }
+
+      .main {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .panel {
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(148, 163, 184, 0.55);
+        background: radial-gradient(
+          circle at top left,
+          rgba(15, 23, 42, 0.9),
+          rgba(15, 23, 42, 0.97)
+        );
+        padding: 10px 11px 11px;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 6px;
+        gap: 8px;
+      }
+
+      .panel-title {
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .panel-subtitle {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .tag {
+        font-size: 11px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.7);
+        color: var(--muted);
+        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.99));
+      }
+
+      .tag-ghost {
+        border-style: dashed;
+        border-color: rgba(148, 163, 184, 0.6);
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .preview-tile {
+        border-radius: 9px;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        padding: 6px;
+        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.97));
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: default;
+      }
+
+      .preview-thumb {
+        height: 40px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(59, 130, 246, 0.08));
+        border: 1px solid rgba(56, 189, 248, 0.4);
+      }
+
+      .preview-label {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .side-card {
+        padding: 12px 12px 13px;
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(148, 163, 184, 0.55);
+        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      }
+
+      .side-title {
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+
+      .side-text {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 10px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .stat {
+        flex: 1;
+      }
+
+      .stat-label {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .stat-value {
+        font-size: 13px;
+        color: var(--text);
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(74, 222, 128, 0.9);
+        padding: 3px 9px;
+        font-size: 11px;
+        color: #bbf7d0;
+        background: radial-gradient(
+          circle at top left,
+          rgba(34, 197, 94, 0.35),
+          rgba(21, 128, 61, 0.2)
+        );
+        margin-top: 4px;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.6);
+      }
+
+      @media (max-width: 768px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        body {
+          padding: 24px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="frame" id="app-shell">
+      <header class="frame-header">
+        <div class="traffic-lights">
+          <span class="traffic-dot" data-testid="traffic-close"></span>
+          <span class="traffic-dot"></span>
+          <span class="traffic-dot"></span>
+        </div>
+        <div class="frame-title" id="window-title">component-preview • hover demo.html</div>
+        <div class="badge" id="preview-status">
+          <span class="badge-dot"></span>
+          <span>Preview server detected</span>
+        </div>
+      </header>
+
+      <section class="layout" aria-label="Component preview demo layout">
+        <section class="hero" id="hero-card">
+          <div class="eyebrow">
+            <span class="eyebrow-pill"></span>
+            <span>Live component previews</span>
+          </div>
+          <h1 data-testid="headline">Hover any element. See the real UI.</h1>
+          <p class="lead" id="lead-copy">
+            This fixture is tuned for the Component Preview extension. Move your cursor over tags
+            like the button, tiles, or badges to capture precise screenshots of the rendered HTML.
+          </p>
+          <div class="cta-row">
+            <button class="button-primary" id="primary-cta">Attach hover image</button>
+            <p class="cta-note">Or hover arbitrary markup to trigger automatic screenshots.</p>
+          </div>
+          <div class="meta-row">
+            <div class="meta-pill">
+              <span>Static HTML path</span>
+              <span aria-hidden="true">•</span>
+              <span>fixtures/hover-fixture-debug-html/index.html</span>
+            </div>
+            <div class="meta-pill">
+              <span>React dev server not required</span>
+            </div>
+          </div>
+
+          <div class="main" id="main-panels">
+            <section class="panel" id="element-panel">
+              <header class="panel-header">
+                <div class="panel-title">Element identity</div>
+                <div class="panel-subtitle">Stable `data-hover-id` for each node</div>
+              </header>
+              <div class="row">
+                <span class="tag" id="tag-id">#primary-cta</span>
+                <span class="tag">data-testid="headline"</span>
+                <span class="tag tag-ghost">html &gt; body &gt; main &gt; h1:nth-of-type(1)</span>
+              </div>
+            </section>
+
+            <section class="panel" id="preview-grid-panel">
+              <header class="panel-header">
+                <div class="panel-title">Recent previews</div>
+                <div class="panel-subtitle">Fake tiles for hover targeting</div>
+              </header>
+              <div class="preview-grid">
+                <article class="preview-tile" id="tile-hero">
+                  <div class="preview-thumb"></div>
+                  <div class="preview-label">&lt;section id="hero-card" /&gt;</div>
+                </article>
+                <article class="preview-tile" id="tile-pricing">
+                  <div class="preview-thumb"></div>
+                  <div class="preview-label">&lt;article class="pricing-card" /&gt;</div>
+                </article>
+                <article class="preview-tile" id="tile-form">
+                  <div class="preview-thumb"></div>
+                  <div class="preview-label">&lt;form id="sandbox-form" /&gt;</div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <aside class="side" aria-label="Debug info">
+          <section class="side-card" id="screenshot-metadata">
+            <h2 class="side-title">Screenshot metadata</h2>
+            <p class="side-text">
+              Use this column to verify capture sizing, quality steps, and cache behavior while you
+              tune the pipeline.
+            </p>
+            <div class="stat-row">
+              <div class="stat">
+                <span class="stat-label">Max JPEG bytes</span>
+                <span class="stat-value">150 KB</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Viewport</span>
+                <span class="stat-value">960 × 540</span>
+              </div>
+            </div>
+            <div class="status-pill" id="status-pill">
+              <span class="status-dot"></span>
+              <span>Adaptive pipeline healthy</span>
+            </div>
+          </section>
+
+          <section class="side-card" id="hover-tips">
+            <h2 class="side-title">Try hovering here</h2>
+            <p class="side-text">
+              For best coverage, sample a mix of small badges, buttons, panels, and the inline tags
+              below.
+            </p>
+            <div class="row">
+              <span class="tag" id="tag-badge">.badge</span>
+              <span class="tag">.preview-tile</span>
+              <span class="tag tag-ghost">&lt;aside id="hover-tips" /&gt;</span>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

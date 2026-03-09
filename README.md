@@ -34,7 +34,13 @@ or trying to understand a UI quickly.
 
 Install **Component Preview** from the VS Code Marketplace (or Open VSX).
 
-### 2) (Vue/Svelte recommended) Install the Vite plugin
+### 2) Start your dev server
+
+For `.tsx`, `.jsx`, `.vue`, and `.svelte` files, **your app's dev server must be running** for previews to work. The extension connects to it to render live components.
+
+### 3) (Vue/Svelte required) Install the Vite plugin
+
+Vue and Svelte previews require the Vite plugin. It is also recommended for React projects for more accurate matching.
 
 ```sh
 npm install -D vite-plugin-component-preview
@@ -44,14 +50,18 @@ Add it to your Vite config:
 
 ```ts
 import { defineConfig } from "vite";
-import componentPreview from "vite-plugin-component-preview";
+import react from "@vitejs/plugin-react";
+import componentPreview from "vite-plugin-component-preview"; // add this
 
 export default defineConfig({
-  plugins: [componentPreview()],
+  plugins: [
+    react(),
+    componentPreview(), // add this
+  ],
 });
 ```
 
-### 3) If detection misses your dev server (important)
+### 4) If detection misses your dev server
 
 Set `component-preview.devServerUrl` in VS Code/Cursor settings.
 

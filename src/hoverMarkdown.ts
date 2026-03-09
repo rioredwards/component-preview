@@ -15,11 +15,11 @@ export function assembleHoverMarkdown(
   actionLinks: string,
 ): string {
   const imageTag = `<img src="data:${mime};base64,${previewBase64}">`;
-  const full = `${brandHeader}\n\n---\n\n${imageTag}\n\n---\n\n${actionLinks}`;
+  const full = `${brandHeader} | ${actionLinks}\n\n---\n\n${imageTag}`;
 
   if (full.length <= MAX_MARKDOWN_LENGTH) {
     return full;
   }
 
-  return `${textOnlyBrandHeader}\n\n---\n\n${imageTag}\n\n---\n\n${actionLinks}`;
+  return `${textOnlyBrandHeader} | ${actionLinks}\n\n---\n\n${imageTag}`;
 }

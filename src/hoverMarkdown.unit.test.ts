@@ -4,7 +4,7 @@ import { MAX_BYTES, MAX_MARKDOWN_LENGTH } from "./screenshotConstants";
 
 describe("assembleHoverMarkdown", () => {
   const textOnlyHeader = "[**Component Preview**](https://example.com)";
-  const actionLinks = "[$(copy) Copy](command:foo)  \n[$(git-pull-request) PR](command:bar)";
+  const actionLinks = "[$(copy)](command:foo \"Copy\") [$(git-pull-request)](command:bar \"PR\")";
 
   it("returns markdown within MAX_MARKDOWN_LENGTH for a small image", () => {
     const previewBase64 = "A".repeat(1000);

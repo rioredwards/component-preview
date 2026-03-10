@@ -29,6 +29,17 @@ Flat, priority-ordered ticket list.
 
 ---
 
+- [P1] AI prompt for setup + framework compatibility check (copy-paste for AI agents)
+  - Acceptance criteria:
+    - Create a single copy-paste prompt users can give to an AI agent that (a) walks through the necessary setup steps for component-preview, and (b) helps the agent determine if the project uses languages/frameworks that are not currently supported.
+    - Prompt is deterministic, concise, and safe (no secret exfiltration).
+    - Expose the prompt in README near the top and/or via an "AI help" affordance in error surfaces.
+    - Include supported frameworks/languages in the prompt context (HTML, React/JSX, Vue, Svelte) and clear guidance for unsupported cases.
+  - Dependencies:
+    - Align with existing AI-first setup/troubleshooting ticket for placement and UX.
+  - Notes:
+    - Reduces friction for AI-native users; agent can quickly assess compatibility before attempting setup.
+
 - [P1] Snapshot manager architecture for export-first roadmap (local-first now, cloud-ready later)
   - Acceptance criteria:
     - Define a clear snapshot lifecycle model: capture → label → persist → index → export.
@@ -73,6 +84,27 @@ Flat, priority-ordered ticket list.
     - Decide whether to support pattern-based registration for `*.svelte` files or keep language-id registration and add guided onboarding.
   - Notes:
     - Reported during manual smoke tests as "no hover shown" in a Vite Svelte JS fixture.
+
+- [P2] On-brand, professional demo video
+  - Acceptance criteria:
+    - Replace or supplement current demo GIF with a higher-quality, on-brand demo video.
+    - Video feels professional and aligned with extension positioning (fast feedback, developer tooling).
+    - Suitable for README, marketplace listing, and/or landing page.
+  - Dependencies:
+    - Define brand/visual guidelines if not already established.
+  - Notes:
+    - Current demo is a GIF; consider format (GIF vs MP4/WebM) for quality and file size.
+
+- [P2] Proper support/feedback link (replace invalid GitHub issues for private repo)
+  - Acceptance criteria:
+    - Replace README TODO and package.json `bugs.url` with a working support/feedback channel.
+    - Link is publicly accessible (GitHub issues are not available for private repos).
+    - Choose and implement an alternative: e.g. public feedback repo, email, form (Typeform/Google Forms), Discord, or VS Code marketplace Q&A.
+    - Update README Troubleshooting section and package.json `bugs` field.
+  - Dependencies:
+    - Decide on preferred support channel (depends on desired workflow: triage, async, community, etc.).
+  - Notes:
+    - Current `bugs.url` and README placeholder point to GitHub issues, which 404/forbidden for private repos.
 
 - [P2] UX polish: onboarding toast for missing plugin/framework support
   - Acceptance criteria:

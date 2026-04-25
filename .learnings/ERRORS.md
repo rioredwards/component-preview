@@ -429,3 +429,62 @@ Run extension-host tests via npm scripts (`npm run test -- --grep ...`) instead 
 - **Notes**: Reran with `npm run test -- --grep ...` and the targeted test passed.
 
 ---
+## [ERR-20260325-014] stale-agent-skill-sync-path
+
+**Logged**: 2026-03-26T02:20:05Z
+**Priority**: medium
+**Status**: pending
+**Area**: docs
+
+### Summary
+Repo bootstrap instructions point to a non-existent `~/coding/agent-skills/...` path on this machine, so proactive skill sync fails immediately.
+
+### Error
+```text
+zsh:1: no such file or directory: /Users/rioredwards/coding/agent-skills/scripts/skill-sync
+```
+
+### Context
+- Command attempted: `~/coding/agent-skills/scripts/skill-sync sync --project /Users/rioredwards/dev/component-preview`
+- `AGENTS.md` still references `~/coding/agent-skills/*`
+- The installed canonical skill repo for this environment is under `/Users/rioredwards/dev/agent-skills`
+
+### Suggested Fix
+Update shared agent documentation and any generated links to the current canonical skill-system path, or make the bootstrap command resolve from `$HOME`-relative config instead of a hard-coded repo location.
+
+### Metadata
+- Reproducible: yes
+- Related Files: AGENTS.md
+
+---
+## [ERR-20260325-015] gh-auth-invalid-default-account
+
+**Logged**: 2026-03-26T02:20:05Z
+**Priority**: medium
+**Status**: pending
+**Area**: config
+
+### Summary
+GitHub CLI issue creation is blocked because the default `gh` account token is invalid.
+
+### Error
+```text
+github.com
+  X Failed to log in to github.com account rioredwards (default)
+  - Active account: true
+  - The token in default is invalid.
+```
+
+### Context
+- Command attempted: `gh auth status`
+- Goal: create GitHub issues from review findings
+- Repo remote is `git@github.com:rioredwards/component-preview.git`
+
+### Suggested Fix
+Re-authenticate GitHub CLI for `github.com` before automation that creates issues or PRs.
+
+### Metadata
+- Reproducible: yes
+- Related Files: package.json
+
+---

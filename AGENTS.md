@@ -1,1 +1,1 @@
-/Users/rioredwards/coding/agent-skills/instructions/base-AGENTS.md
+/Users/rioredwards/dev/agent-skills/instructions/base-AGENTS.md
